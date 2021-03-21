@@ -31,7 +31,7 @@ struct MotorMap {
 class MotorCallback {
 public:
     MotorCallback(int canID) {
-        motor = std::make_shared<TalonFX>(canID);
+        motor = new TalonFX(canID);
         setNeutral();
         std::cout << motor->GetLastError() << std::endl;
         if (motor->GetLastError() != ctre::phoenix::ErrorCode::OK) {
@@ -47,9 +47,13 @@ public:
         motor->Set(ControlMode::PercentOutput, 0);
     }
 
+    ~MotorCallback(){
+        delete motor;
+    }
+
 private:
     std::string topicName;
-    std::shared_ptr<TalonFX> motor;
+    TalonFX * motor;
 };
 
 class MotorSubscriber : public rclcpp::Node {
