@@ -1,46 +1,121 @@
 #include <tinyxml.h>
 
+#include <exception>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <iostream>
 
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/float64.hpp"
 
-#define Phoenix_No_WPI // remove WPI dependencies
+#define Phoenix_No_WPI  // remove WPI dependencies
 #include "ctre/Phoenix.h"
+#include "ctre/phoenix/cci/Unmanaged_CCI.h"
 #include "ctre/phoenix/platform/Platform.h"
 #include "ctre/phoenix/unmanaged/Unmanaged.h"
-#include "ctre/phoenix/cci/Unmanaged_CCI.h"
 
 using namespace ctre::phoenix;
 using namespace ctre::phoenix::platform;
 using namespace ctre::phoenix::motorcontrol;
 using namespace ctre::phoenix::motorcontrol::can;
 
-/* make some talons for drive train */
-TalonFX talLeft(1);
-TalonFX talRght(0);
+using std::placeholders::_1;
 
-int main(int argc, char **argv) {
+struct MotorMap {
+    std::string topicName;
+    int canID;
+};
+
+class MotorCallback {
+public:
+    MotorCallback(int canID) {
+        motor = std::make_shared<TalonFX>(canID);
+        setNeutral();
+        std::cout << motor->GetLastError() << std::endl;
+        if (motor->GetLastError() != ctre::phoenix::ErrorCode::OK) {
+            throw std::runtime_error("failed to initialize device with reason" + std::to_string(motor->GetLastError()));
+        }
+    }
+
+    void callback(const std_msgs::msg::Float64::SharedPtr msg) {
+        motor->Set(ControlMode::PercentOutput, (double)msg->data);
+    }
+
+    void setNeutral() {
+        motor->Set(ControlMode::PercentOutput, 0);
+    }
+
+private:
+    std::string topicName;
+    std::shared_ptr<TalonFX> motor;
+};
+
+class MotorSubscriber : public rclcpp::Node {
+public:
+    MotorSubscriber() : Node("can_hw_interface") {
+        subscriptions = std::vector<rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr>();
+        motors = std::vector<MotorCallback>();
+    }
+
+    void setMotors(std::vector<MotorMap> motors) {
+        for (MotorMap motor : motors) {
+            try {
+                //create callback
+                MotorCallback cb = MotorCallback(motor.canID);
+
+                //push the callback and subscription onto their vectors
+                subscriptions.push_back(this->create_subscription<std_msgs::msg::Float64>(
+                    motor.topicName, 10, std::bind(&MotorCallback::callback, cb, _1)));
+                this->motors.push_back(cb);
+            } catch (std::exception& e) {
+                RCLCPP_ERROR(this->get_logger(), "Failed to bind motor to ID %f\nCause: %s", motor.canID, e.what());
+            }
+        }
+    }
+
+    void neutralMotors() {
+        for (MotorCallback motor : motors) {
+            motor.setNeutral();
+        }
+    }
+
+private:
+    std::vector<rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr> subscriptions;
+    std::vector<MotorCallback> motors;
+};
+
+int main(int argc, char** argv) {
     //init ros node
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> rosNode = rclcpp::Node::make_shared("hw_interface");
+    std::shared_ptr<MotorSubscriber> rosNode = std::make_shared<MotorSubscriber>();
     RCLCPP_INFO(rosNode->get_logger(), "hardware interface node starting");
 
     //init canbus
     std::string interface = "can0";
-	ctre::phoenix::platform::can::SetCANInterface(interface.c_str());
+    ctre::phoenix::platform::can::SetCANInterface(interface.c_str());
 
-    RCLCPP_INFO(rosNode->get_logger(), "hardware interface node loaded using can interface %s", interface);
+    /* make some talons for drive train */
+    std::vector<MotorMap> test = std::vector<MotorMap>();
+    test.push_back({"left", 0});
+    test.push_back({"right", 1});
+    rosNode->setMotors(test);
 
-    talLeft.Set(ControlMode::PercentOutput, 0.0);
-    talRght.Set(ControlMode::PercentOutput, 0.0);
+    //set all motors to neutral
+    rosNode->neutralMotors();
 
-    // Zzzzzz.
+    RCLCPP_INFO(rosNode->get_logger(), "hardware interface node loaded using can interface %s", interface.c_str());
+
+    // serve the callbacks
     rclcpp::spin(rosNode);
 
     RCLCPP_INFO(rosNode->get_logger(), "hardware interface shutting down");
+
+    //set all motors to neutral
+    rosNode->neutralMotors();
+
+    RCLCPP_INFO(rosNode->get_logger(), "hardware interface shut down complete");
 
     rclcpp::shutdown();
 
