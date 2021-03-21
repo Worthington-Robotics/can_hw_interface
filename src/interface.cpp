@@ -60,19 +60,27 @@ class MotorSubscriber : public rclcpp::Node {
 public:
     MotorSubscriber() : Node("can_hw_interface") {
         subscriptions = std::vector<rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr>();
-        motors = std::vector<MotorCallback>();
+        motors = std::vector<MotorCallback*>();
     }
 
     void setMotors(std::vector<MotorMap> motors) {
         for (MotorMap motor : motors) {
             try {
+                motor.topicName = "can_hw_interface/" + motor.topicName;
+                RCLCPP_INFO(this->get_logger(), "creating device on topic %s with ID %d", motor.topicName.c_str(), motor.canID );
+                
                 //create callback
-                MotorCallback cb = MotorCallback(motor.canID);
+                MotorCallback*  cb = new MotorCallback(motor.canID);
+                RCLCPP_INFO_ONCE(this->get_logger(), "created device");
 
                 //push the callback and subscription onto their vectors
-                subscriptions.push_back(this->create_subscription<std_msgs::msg::Float64>(
-                    motor.topicName, 10, std::bind(&MotorCallback::callback, cb, _1)));
+                subscriptions.push_back(this->create_subscription<std_msgs::msg::Float64>(motor.topicName, 10, std::bind(&MotorCallback::callback, cb, _1)));
+
+                RCLCPP_INFO_ONCE(this->get_logger(), "subscribed topic for device");
+
                 this->motors.push_back(cb);
+
+                RCLCPP_INFO_ONCE(this->get_logger(), "registered motor");
             } catch (std::exception& e) {
                 RCLCPP_ERROR(this->get_logger(), "Failed to bind motor to ID %f\nCause: %s", motor.canID, e.what());
             }
@@ -80,14 +88,22 @@ public:
     }
 
     void neutralMotors() {
-        for (MotorCallback motor : motors) {
-            motor.setNeutral();
+        for (MotorCallback* motor : motors) {
+            motor->setNeutral();
         }
+    }
+
+    ~MotorSubscriber(){
+        neutralMotors();
+        for (size_t i = 0; i < motors.size(); i++) {
+            delete motors.at(i);
+        }
+        motors.clear();
     }
 
 private:
     std::vector<rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr> subscriptions;
-    std::vector<MotorCallback> motors;
+    std::vector<MotorCallback*> motors;
 };
 
 int main(int argc, char** argv) {
