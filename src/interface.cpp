@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <chrono>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
@@ -22,6 +23,7 @@ using namespace ctre::phoenix::motorcontrol;
 using namespace ctre::phoenix::motorcontrol::can;
 
 using std::placeholders::_1;
+using namespace std::chrono_literals;
 
 struct MotorMap {
     std::string topicName;
@@ -61,6 +63,7 @@ public:
     MotorSubscriber() : Node("can_hw_interface") {
         subscriptions = std::vector<rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr>();
         motors = std::vector<MotorCallback*>();
+        timer = this->create_wall_timer(50ms, std::bind(&MotorSubscriber::feedSafety, this));
     }
 
     void setMotors(std::vector<MotorMap> motors) {
@@ -87,6 +90,10 @@ public:
         }
     }
 
+    void feedSafety(){
+        ctre::phoenix::unmanaged::FeedEnable(100);
+    }
+
     void neutralMotors() {
         for (MotorCallback* motor : motors) {
             motor->setNeutral();
@@ -104,6 +111,7 @@ public:
 private:
     std::vector<rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr> subscriptions;
     std::vector<MotorCallback*> motors;
+    rclcpp::TimerBase::SharedPtr timer;
 };
 
 int main(int argc, char** argv) {
