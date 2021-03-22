@@ -30,7 +30,8 @@ struct MotorMap {
 
 class MotorCallback {
 public:
-    MotorCallback(int canID) {
+    MotorCallback(int canID, rclcpp::Node* node) {
+        rosNode = node;
         motor = new TalonFX(canID);
         setNeutral();
         std::cout << motor->GetLastError() << std::endl;
@@ -40,6 +41,7 @@ public:
     }
 
     void callback(const std_msgs::msg::Float64::SharedPtr msg) {
+        //RCLCPP_INFO(rosNode->get_logger(), "got callback with data [ %f ] to motor ID: %i", (double)msg->data, motor->GetDeviceID());
         motor->Set(ControlMode::PercentOutput, (double)msg->data);
     }
 
@@ -54,6 +56,7 @@ public:
 private:
     std::string topicName;
     TalonFX * motor;
+    rclcpp::Node * rosNode;
 };
 
 class MotorSubscriber : public rclcpp::Node {
@@ -70,17 +73,17 @@ public:
                 RCLCPP_INFO(this->get_logger(), "creating device on topic %s with ID %d", motor.topicName.c_str(), motor.canID );
                 
                 //create callback
-                MotorCallback*  cb = new MotorCallback(motor.canID);
-                RCLCPP_INFO_ONCE(this->get_logger(), "created device");
+                MotorCallback*  cb = new MotorCallback(motor.canID, this);
+                //RCLCPP_INFO_ONCE(this->get_logger(), "created device");
 
                 //push the callback and subscription onto their vectors
                 subscriptions.push_back(this->create_subscription<std_msgs::msg::Float64>(motor.topicName, 10, std::bind(&MotorCallback::callback, cb, _1)));
 
-                RCLCPP_INFO_ONCE(this->get_logger(), "subscribed topic for device");
+                //RCLCPP_INFO_ONCE(this->get_logger(), "subscribed topic for device");
 
                 this->motors.push_back(cb);
 
-                RCLCPP_INFO_ONCE(this->get_logger(), "registered motor");
+                //RCLCPP_INFO_ONCE(this->get_logger(), "registered motor");
             } catch (std::exception& e) {
                 RCLCPP_ERROR(this->get_logger(), "Failed to bind motor to ID %f\nCause: %s", motor.canID, e.what());
             }
@@ -118,8 +121,8 @@ int main(int argc, char** argv) {
 
     /* make some talons for drive train */
     std::vector<MotorMap> test = std::vector<MotorMap>();
-    test.push_back({"left", 0});
-    test.push_back({"right", 1});
+    test.push_back({"left", 1});
+    test.push_back({"right", 3});
     rosNode->setMotors(test);
 
     //set all motors to neutral
