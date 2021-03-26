@@ -25,6 +25,22 @@ find_package(rclcpp REQUIRED)
 find_package(tinyxml_vendor REQUIRED)
 find_package(TinyXML REQUIRED)
 
+#generate messages
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/CanBusStatusMsg.msg"
+  "msg/CanMotorMsg.msg"
+  "msg/CanMotorStatusMsg.msg"
+  "msg/SystemStatusMsg.msg"
+  "msg/PDPStatusMsg.msg"
+  "srv/SetMotorConfig.srv"
+  "srv/SetPIDFGains.srv"
+  #DEPENDENCIES geometry_msgs
+)
+
+ament_export_dependencies(rosidl_default_runtime)
+
 #declare executable
 add_executable(hw_interface src/interface.cpp)
 
@@ -59,6 +75,10 @@ endif()
 target_link_libraries(hw_interface Threads::Threads)
 target_link_libraries(hw_interface ${SDL2_LIBRARIES})
 target_link_libraries(hw_interface ${TinyXML_LIBRARIES})
+
+rosidl_target_interfaces(hw_interface
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
 
 ament_target_dependencies(hw_interface rclcpp)
 

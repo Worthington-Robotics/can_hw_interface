@@ -1,0 +1,17 @@
+float32 batt_voltage
+float32 ch0_current
+float32 ch1_current
+float32 ch2_current
+float32 ch3_current
+float32 ch4_current
+float32 ch5_current
+float32 ch6_current
+float32 ch7_current
+float32 ch8_current
+float32 ch9_current
+float32 ch10_current
+float32 ch11_current
+float32 ch12_current
+float32 ch13_current
+float32 ch14_current
+float32 ch15_current
