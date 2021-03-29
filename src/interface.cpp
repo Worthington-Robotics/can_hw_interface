@@ -111,12 +111,14 @@ int main(int argc, char** argv) {
 
     std::map<std::string, double> leftConfig = std::map<std::string, double>();
     leftConfig["motor_inverted"] = 1;
+    leftConfig["curr_limit_enable"] = 0;
     MotorMap leftMap = MotorMap();
     leftMap.canID = 1; leftMap.topicName = "left"; leftMap.config = leftConfig;
     test.push_back(leftMap);
 
     std::map<std::string, double> rightConfig = std::map<std::string, double>();
     rightConfig["motor_inverted"] = 0;
+    rightConfig["curr_limit_enable"] = 0;
     MotorMap rightMap = MotorMap();
     rightMap.canID = 3; rightMap.topicName = "right"; rightMap.config = rightConfig;
     test.push_back(rightMap);

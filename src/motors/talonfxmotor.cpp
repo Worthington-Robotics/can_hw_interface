@@ -17,6 +17,7 @@ namespace robotmotors {
         motor->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor);
         motor->SelectProfileSlot(0, 0);
         double currentLimitVal, currentLimitTime, currentLimitTrigger;
+        bool currentLimEnable;
         //do general config things
         for (std::map<std::string, double>::iterator it = config.begin(); it != config.end(); it++) {
             if (it->first == "motor_inverted")
@@ -46,10 +47,12 @@ namespace robotmotors {
                 currentLimitVal = it->second;
             else if (it->first == "curr_limit_time")
                 currentLimitTime = it->second;
+            else if (it->first == "curr_limit_enable")
+                currentLimEnable = it->second != 0;
         }
 
         //final combined configs
-        motor->ConfigStatorCurrentLimit({(currentLimitTime != 0 && currentLimitVal != 0 && currentLimitTrigger != 0), currentLimitVal, currentLimitTrigger, currentLimitTime});
+        motor->ConfigStatorCurrentLimit({currentLimEnable, currentLimitVal, currentLimitTrigger, currentLimitTime});
 
         std::cout << "config complete. last error code is " << motor->GetLastError() << std::endl;
 
