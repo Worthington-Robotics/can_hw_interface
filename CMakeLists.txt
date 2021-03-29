@@ -29,24 +29,25 @@ find_package(TinyXML REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/CanBusStatusMsg.msg"
-  "msg/CanMotorMsg.msg"
-  "msg/CanMotorStatusMsg.msg"
-  "msg/SystemStatusMsg.msg"
-  "msg/PDPStatusMsg.msg"
-  "srv/SetMotorConfig.srv"
-  "srv/SetPIDFGains.srv"
+  "messages/msg/CanBusStatusMsg.msg"
+  "messages/msg/MotorMsg.msg"
+  "messages/msg/MotorStatusMsg.msg"
+  "messages/msg/PDPStatusMsg.msg"
+
+  "messages/srv/SetMotorConfig.srv"
+  "messages/srv/SetPIDFGains.srv"
   #DEPENDENCIES geometry_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)
 
 #declare executable
-add_executable(hw_interface src/interface.cpp)
+add_executable(hw_interface src/interface.cpp src/motors/talonfxmotor.cpp)
 
 #trace include dirs
 target_include_directories(hw_interface PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interfaces>
   $<INSTALL_INTERFACE:include>)
 
 #link CTRE libs
@@ -78,7 +79,6 @@ target_link_libraries(hw_interface ${TinyXML_LIBRARIES})
 
 rosidl_target_interfaces(hw_interface
   ${PROJECT_NAME} "rosidl_typesupport_cpp")
-
 
 ament_target_dependencies(hw_interface rclcpp)
 
