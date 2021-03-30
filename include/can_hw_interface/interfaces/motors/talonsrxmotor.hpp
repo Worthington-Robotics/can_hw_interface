@@ -70,13 +70,14 @@ namespace robotmotors {
         void set(ControlMode mode, double output, double arbOutput) override;
 
         /*
-         *
-         * @return
+         * updates the sensor data for this in the format
+         * float32 voltage, float32 current, float64 position, float32 velocity, bool fwd_limit, bool rev_limit
+         * @return message read successful
          */
         bool getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) override;
 
         /*
-         *
+         * sets this using the data from the msg file
          */
         void setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) override;
 

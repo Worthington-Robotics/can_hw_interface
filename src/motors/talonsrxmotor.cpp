@@ -122,11 +122,11 @@ namespace robotmotors {
         return motor->GetLastError() == OK;;
     }
 
-    void TalonFxMotor::setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) {
+    void TalonSrxMotor::setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) {
         set(static_cast<ControlMode>(msg->control_mode), msg->demand, msg->arb_feedforward);
     }
 
-    TalonFxMotor::~TalonFxMotor() {
+    TalonSrxMotor::~TalonSrxMotor() {
         delete motor;
     }
 }  // namespace robotmotors
