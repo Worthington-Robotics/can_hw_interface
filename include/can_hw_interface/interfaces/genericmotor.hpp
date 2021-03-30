@@ -4,6 +4,7 @@
 #include <string>
 
 #include "can_hw_interface/msg/motor_msg.hpp"
+#include "can_hw_interface/msg/motor_status_msg.hpp"
 #include "can_hw_interface/srv/set_pidf_gains.hpp"
 #include "genericsensor.hpp"
 
@@ -14,7 +15,7 @@ namespace robotmotors {
         POSITION_CONTROL,
         VELOCITY_CONTROL,
         PROFILE_CONTROL,
-        CURRENT_CONTROL
+        CURRENT_CONTROL,
     };
 
     class GenericMotor {
@@ -27,7 +28,7 @@ namespace robotmotors {
         /**
          * configures the motor based on the presence of data in a map
          * the device is expected to be defaulted, then configured as expected
-         * 
+         * returns true if the device was configured without errors
          **/
         virtual bool configure(std::map<std::string, double> & config) = 0;
 
@@ -45,9 +46,10 @@ namespace robotmotors {
         virtual void set(ControlMode mode, double output, double arbInput) = 0;
 
         /**
-         * gets access to the internal sensors that it has been configured to publish
+         * gets the status reporting message to be published containing feedback data
+         * returns true if the device gave all values ok
          **/ 
-        virtual bool getSensor(robotsensors::GenericSensor& sens) = 0;
+        virtual bool getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) = 0;
 
         /**
          * callback for ROS messages to set the state of the motor

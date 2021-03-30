@@ -16,18 +16,39 @@ namespace robotmotors {
         motor->ConfigFactoryDefault();
         motor->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor);
         motor->SelectProfileSlot(0, 0);
-        double currentLimitVal, currentLimitTime, currentLimitTrigger;
-        bool currentLimEnable;
+        double currentLimitVal = 0, currentLimitTime = 0, currentLimitTrigger = 0;
+        bool currentLimEnable = false;
         //do general config things
         for (std::map<std::string, double>::iterator it = config.begin(); it != config.end(); it++) {
+            //physical inversion
             if (it->first == "motor_inverted")
                 motor->SetInverted(it->second != 0);
             else if (it->first == "sensor_inverted")
                 motor->SetSensorPhase(it->second != 0);
+
+            //master follower TODO (have to figure this one out)
+            else if (it->first == "follow"){
+                motor->Set(ctre::phoenix::motorcontrol::ControlMode::Follower, it->second);
+                followerLock = true;
+            }
+
+            //feedback settings
             else if (it->first == "feedback_rate")
-                motor->SetStatusFramePeriod(Status_2_Feedback0, it->second != 0, 100);
+                motor->SetStatusFramePeriod(Status_2_Feedback0, (int)it->second, 0);
+            else if (it->first == "feedback_position")
+                feedbackEn.at(0) = it->second != 0;
+            else if (it->first == "feedback_velocity")
+                feedbackEn.at(1) = it->second != 0;
+            else if (it->first == "feedback_current")
+                feedbackEn.at(2) = it->second != 0;
+            else if (it->first == "feedback_voltage")
+                feedbackEn.at(3) = it->second != 0;
+
+            //idle mode
             else if (it->first == "neutral_brake")
                 motor->SetNeutralMode((it->second != 0 ? NeutralMode::Brake : NeutralMode::Coast));
+
+            //pid settings
             else if (it->first == "vcomp_voltage") {
                 motor->ConfigVoltageCompSaturation(it->second);
                 motor->EnableVoltageCompensation(true);
@@ -41,6 +62,8 @@ namespace robotmotors {
                 motor->Config_kD(0, it->second, 0);
             else if (it->first == "pid_kf")
                 motor->Config_kF(0, it->second, 0);
+
+            //current clamping
             else if (it->first == "curr_limit_trig")
                 currentLimitTrigger = it->second;
             else if (it->first == "curr_limit_val")
@@ -70,7 +93,12 @@ namespace robotmotors {
         resp->success = motor->GetLastError() == OK;
     }
 
+    /**
+     * used to set the output of the motor as well as the output mode
+     * if the device is a follower, no call to update the motor is made 
+     **/
     void TalonFxMotor::set(ControlMode mode, double output, double arbOutput) {
+        if(followerLock) return;
         if(mode == POSITION_CONTROL){
             motor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, output, DemandType::DemandType_ArbitraryFeedForward, arbOutput);
         } else if(mode == VELOCITY_CONTROL){
@@ -85,8 +113,13 @@ namespace robotmotors {
         
     }
 
-    bool TalonFxMotor::getSensor(robotsensors::GenericSensor& sens) {
-        return true;
+    // TODO continue for other feedback data needs
+    bool TalonFxMotor::getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) {
+        if(feedbackEn.at(0)) msg->position = motor->GetSelectedSensorPosition();
+        if(feedbackEn.at(1)) msg->velocity = motor->GetSelectedSensorVelocity();
+        if(feedbackEn.at(2)) msg->current = motor->GetStatorCurrent();
+        if(feedbackEn.at(3)) msg->voltage = motor->GetBusVoltage();
+        return motor->GetLastError() == OK;;
     }
 
     void TalonFxMotor::setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) {

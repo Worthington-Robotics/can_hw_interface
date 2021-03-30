@@ -27,7 +27,7 @@ struct MotorMap {
 
 class HardwareController : public rclcpp::Node {
 private:
-    std::vector<robotmotors::GenericMotor*> motors;
+    std::map<int, robotmotors::GenericMotor*> motors;
     std::vector<std::string> topics;
     std::vector<rclcpp::Subscription<can_hw_interface::msg::MotorMsg>::SharedPtr> subscriptions;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safetySubscrip;
@@ -35,20 +35,20 @@ private:
 
 public:
     HardwareController() : Node("can_hw_interface") {
-        motors = std::vector<robotmotors::GenericMotor*>();
+        motors = std::map<int, robotmotors::GenericMotor*>();
         subscriptions = std::vector<rclcpp::Subscription<can_hw_interface::msg::MotorMsg>::SharedPtr>();
         safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1));
     }
 
-    void setMotors(std::vector<MotorMap> motors) {
-        for (MotorMap motorMap : motors) {
-            try {
-
+    void setMotors(std::vector<MotorMap> motorConfig) {
+        try {
+            //create all motors
+            for (MotorMap motorMap : motorConfig) {
                 motorMap.topicName = "can_hw_interface/" + motorMap.topicName;
 
                 auto existingElem = std::find(topics.begin(), topics.end(), motorMap.topicName);
-                if(existingElem != topics.begin() && existingElem != topics.end()){
-                    throw std::runtime_error("Attempted to create duplicate topic for distinct motors");
+                if (existingElem != topics.begin() && existingElem != topics.end()) {
+                    throw std::runtime_error("Attempted to create duplicate topic with name " + motorMap.topicName);
                 }
                 RCLCPP_INFO(this->get_logger(), "creating device on topic %s with ID %d", motorMap.topicName.c_str(), motorMap.canID);
                 topics.push_back(motorMap.topicName);
@@ -57,22 +57,23 @@ public:
                 robotmotors::GenericMotor* motor = new robotmotors::TalonFxMotor(motorMap.canID);
                 RCLCPP_INFO(this->get_logger(), "created device");
 
-                if(!motor->configure(motorMap.config)){
+                //configuration phase
+                if (!motor->configure(motorMap.config)) {
                     throw std::runtime_error("Device returned non-ok error code after configuration");
                 }
 
                 //push the callback and subscription onto their vectors
                 subscriptions.push_back(this->create_subscription<can_hw_interface::msg::MotorMsg>(motorMap.topicName, 10,
-                                        std::bind(&robotmotors::GenericMotor::setCallback, motor, _1)));
+                                                                                                   std::bind(&robotmotors::GenericMotor::setCallback, motor, _1)));
 
-                RCLCPP_INFO(this->get_logger(), "subscribed topic for device");
-
-                this->motors.push_back(motor);
+                this->motors[motorMap.canID] = motor;
 
                 RCLCPP_INFO(this->get_logger(), "registered motor");
-            } catch (const std::runtime_error & e) {
-                RCLCPP_ERROR(this->get_logger(), "Failed to bind motor to ID %f\nCause: %s", motorMap.canID, e.what());
             }
+        } catch (const std::exception& e) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to bind motor\nCause: %s", e.what());
+        } catch (...) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to bind motor\nCause Unknown");
         }
     }
 
@@ -81,8 +82,8 @@ public:
     }
 
     void neutralMotors() {
-        for (robotmotors::GenericMotor* motor : motors) {
-            motor->set(robotmotors::PERCENT_OUTPUT, 0, 0);
+        for (auto it = this->motors.begin(); it != this->motors.end(); it++) {
+            this->motors.at(it->first)->set(robotmotors::PERCENT_OUTPUT, 0, 0);
         }
     }
 
@@ -108,19 +109,28 @@ int main(int argc, char** argv) {
     /* make some talons for drive train */
     std::vector<MotorMap> test = std::vector<MotorMap>();
 
-
     std::map<std::string, double> leftConfig = std::map<std::string, double>();
     leftConfig["motor_inverted"] = 1;
     leftConfig["curr_limit_enable"] = 0;
+    leftConfig["feedback_rate"] = 5;
+    leftConfig["neutral_brake"] = 1;
+    leftConfig["vcomp_voltage"] = 11.0;
     MotorMap leftMap = MotorMap();
-    leftMap.canID = 1; leftMap.topicName = "left"; leftMap.config = leftConfig;
+    leftMap.canID = 1;
+    leftMap.topicName = "left";
+    leftMap.config = leftConfig;
     test.push_back(leftMap);
 
     std::map<std::string, double> rightConfig = std::map<std::string, double>();
     rightConfig["motor_inverted"] = 0;
     rightConfig["curr_limit_enable"] = 0;
+    rightConfig["feedback_rate"] = 5;
+    rightConfig["neutral_brake"] = 1;
+    rightConfig["vcomp_voltage"] = 11.0;
     MotorMap rightMap = MotorMap();
-    rightMap.canID = 3; rightMap.topicName = "right"; rightMap.config = rightConfig;
+    rightMap.canID = 3;
+    rightMap.topicName = "right";
+    rightMap.config = rightConfig;
     test.push_back(rightMap);
 
     rosNode->setMotors(test);
