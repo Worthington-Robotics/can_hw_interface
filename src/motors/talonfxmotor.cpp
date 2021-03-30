@@ -28,7 +28,6 @@ namespace robotmotors {
 
             //master follower TODO (have to figure this one out)
             else if (it->first == "follower"){
-                std::cout << "configuring follower to follow " << (int)it->second << std::endl;
                 motor->Set(ctre::phoenix::motorcontrol::ControlMode::Follower, (int)it->second);
                 followerLock = true;
             }

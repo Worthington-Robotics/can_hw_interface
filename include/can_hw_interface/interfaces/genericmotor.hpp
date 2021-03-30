@@ -18,6 +18,12 @@ namespace robotmotors {
         CURRENT_CONTROL,
     };
 
+    struct MotorMap {
+    std::string topicName;
+    int canID;
+    std::map<std::string, double> config;
+};
+
     class GenericMotor {
     public:
         /**

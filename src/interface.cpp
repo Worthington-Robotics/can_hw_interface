@@ -19,12 +19,6 @@
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
-struct MotorMap {
-    std::string topicName;
-    int canID;
-    std::map<std::string, double> config;
-};
-
 class HardwareController : public rclcpp::Node {
 private:
     std::map<int, robotmotors::GenericMotor*> motors;
@@ -40,10 +34,10 @@ public:
         safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1));
     }
 
-    void setMotors(std::vector<MotorMap> motorConfig) {
+    void setMotors(std::vector<robotmotors::MotorMap> motorConfig) {
         try {
             //create all motors
-            for (MotorMap motorMap : motorConfig) {
+            for (robotmotors::MotorMap motorMap : motorConfig) {
                 motorMap.topicName = "can_hw_interface/" + motorMap.topicName;
 
                 auto existingElem = std::find(topics.begin(), topics.end(), motorMap.topicName);
@@ -83,7 +77,7 @@ public:
 
     void neutralMotors() {
         for (auto it = this->motors.begin(); it != this->motors.end(); it++) {
-            this->motors.at(it->first)->set(robotmotors::PERCENT_OUTPUT, 0, 0);
+            it->second->set(robotmotors::PERCENT_OUTPUT, 0, 0);
         }
     }
 
@@ -106,8 +100,13 @@ int main(int argc, char** argv) {
     std::string interface = "can0";
     ctre::phoenix::platform::can::SetCANInterface(interface.c_str());
 
+    std::string xmlDoc = "";
+
     /* make some talons for drive train */
-    std::vector<MotorMap> test = std::vector<MotorMap>();
+    std::vector<robotmotors::MotorMap> test = std::vector<robotmotors::MotorMap>();
+
+    TiXmlDocument * doc = new TiXmlDocument();
+    doc->Parse(xmlDoc.c_str(), 0, TIXML_ENCODING_UNKNOWN);
 
     std::map<std::string, double> leftConfig = std::map<std::string, double>();
     leftConfig["motor_inverted"] = 1;
@@ -115,7 +114,7 @@ int main(int argc, char** argv) {
     leftConfig["feedback_rate"] = 5;
     leftConfig["neutral_brake"] = 1;
     leftConfig["vcomp_voltage"] = 11.0;
-    MotorMap leftMap = MotorMap();
+    robotmotors::MotorMap leftMap = robotmotors::MotorMap();
     leftMap.canID = 1;
     leftMap.topicName = "left";
     leftMap.config = leftConfig;
@@ -128,8 +127,10 @@ int main(int argc, char** argv) {
     leftFollower["neutral_brake"] = 1;
     leftFollower["vcomp_voltage"] = 11.0;
     leftFollower["follower"] = 1;
-    MotorMap leftFollowerMap = MotorMap();
-    leftFollowerMap.canID = 2; leftFollowerMap.topicName = "left_follower"; leftFollowerMap.config = leftFollower;
+    robotmotors::MotorMap leftFollowerMap = robotmotors::MotorMap();
+    leftFollowerMap.canID = 2;
+    leftFollowerMap.topicName = "left_follower";
+    leftFollowerMap.config = leftFollower;
     test.push_back(leftFollowerMap);
 
     std::map<std::string, double> rightConfig = std::map<std::string, double>();
@@ -138,8 +139,10 @@ int main(int argc, char** argv) {
     rightConfig["feedback_rate"] = 5;
     rightConfig["neutral_brake"] = 1;
     rightConfig["vcomp_voltage"] = 11.0;
-    MotorMap rightMap = MotorMap();
-    rightMap.canID = 3; rightMap.topicName = "right"; rightMap.config = rightConfig;
+    robotmotors::MotorMap rightMap = robotmotors::MotorMap();
+    rightMap.canID = 3;
+    rightMap.topicName = "right";
+    rightMap.config = rightConfig;
     test.push_back(rightMap);
 
     std::map<std::string, double> rightFollower = std::map<std::string, double>();
@@ -149,8 +152,10 @@ int main(int argc, char** argv) {
     rightFollower["neutral_brake"] = 1;
     rightFollower["vcomp_voltage"] = 11.0;
     rightFollower["follower"] = 3;
-    MotorMap rightFollowerMap = MotorMap();
-    rightFollowerMap.canID = 4; rightFollowerMap.topicName = "right_follower"; rightFollowerMap.config = rightFollower;
+    robotmotors::MotorMap rightFollowerMap = robotmotors::MotorMap();
+    rightFollowerMap.canID = 4;
+    rightFollowerMap.topicName = "right_follower";
+    rightFollowerMap.config = rightFollower;
     test.push_back(rightFollowerMap);
 
     rosNode->setMotors(test);
