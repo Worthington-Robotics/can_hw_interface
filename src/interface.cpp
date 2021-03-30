@@ -9,6 +9,7 @@
 
 #define Phoenix_No_WPI  // remove WPI dependencies
 #include "can_hw_interface/interfaces/motors/talonfxmotor.hpp"
+#include "can_hw_interface/interfaces/motors/victorspxmotor.hpp"
 #include "ctre/Phoenix.h"
 #include "ctre/phoenix/cci/Unmanaged_CCI.h"
 #include "ctre/phoenix/platform/Platform.h"
@@ -48,7 +49,10 @@ public:
                 topics.push_back(motorMap.topicName);
 
                 //create callback
-                robotmotors::GenericMotor* motor = new robotmotors::TalonFxMotor(motorMap.canID);
+                robotmotors::GenericMotor* motor;
+                if(motorMap.motorType == "talonfx") motor = new robotmotors::TalonFxMotor(motorMap.canID);
+                else if (motorMap.motorType == "victorspx") motor = new robotmotors::VictorSpxMotor(motorMap.canID);
+                else throw std::runtime_error("No valid motor type defined. Got: " + motorMap.motorType);
                 RCLCPP_INFO(this->get_logger(), "created device");
 
                 //configuration phase
@@ -81,6 +85,7 @@ public:
         }
     }
 
+    //TODO fix error here
     ~HardwareController() {
         neutralMotors();
         for (size_t i = 0; i < motors.size(); i++) {
@@ -110,17 +115,16 @@ int main(int argc, char** argv) {
 
     std::map<std::string, double> leftConfig = std::map<std::string, double>();
     leftConfig["motor_inverted"] = 1;
-    leftConfig["curr_limit_enable"] = 0;
-    leftConfig["feedback_rate"] = 5;
     leftConfig["neutral_brake"] = 1;
     leftConfig["vcomp_voltage"] = 11.0;
     robotmotors::MotorMap leftMap = robotmotors::MotorMap();
     leftMap.canID = 1;
+    leftMap.motorType = "victorspx";
     leftMap.topicName = "left";
     leftMap.config = leftConfig;
     test.push_back(leftMap);
 
-    std::map<std::string, double> leftFollower = std::map<std::string, double>();
+    /*std::map<std::string, double> leftFollower = std::map<std::string, double>();
     leftFollower["motor_inverted"] = 1;
     leftFollower["curr_limit_enable"] = 0;
     leftFollower["feedback_rate"] = 5;
@@ -131,21 +135,20 @@ int main(int argc, char** argv) {
     leftFollowerMap.canID = 2;
     leftFollowerMap.topicName = "left_follower";
     leftFollowerMap.config = leftFollower;
-    test.push_back(leftFollowerMap);
+    test.push_back(leftFollowerMap);*/
 
     std::map<std::string, double> rightConfig = std::map<std::string, double>();
     rightConfig["motor_inverted"] = 0;
-    rightConfig["curr_limit_enable"] = 0;
-    rightConfig["feedback_rate"] = 5;
     rightConfig["neutral_brake"] = 1;
     rightConfig["vcomp_voltage"] = 11.0;
     robotmotors::MotorMap rightMap = robotmotors::MotorMap();
     rightMap.canID = 3;
     rightMap.topicName = "right";
+    rightMap.motorType = "victorspx";
     rightMap.config = rightConfig;
     test.push_back(rightMap);
 
-    std::map<std::string, double> rightFollower = std::map<std::string, double>();
+    /*std::map<std::string, double> rightFollower = std::map<std::string, double>();
     rightFollower["motor_inverted"] = 0;
     rightFollower["curr_limit_enable"] = 0;
     rightFollower["feedback_rate"] = 5;
@@ -156,7 +159,7 @@ int main(int argc, char** argv) {
     rightFollowerMap.canID = 4;
     rightFollowerMap.topicName = "right_follower";
     rightFollowerMap.config = rightFollower;
-    test.push_back(rightFollowerMap);
+    test.push_back(rightFollowerMap);*/
 
     rosNode->setMotors(test);
 

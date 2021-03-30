@@ -27,6 +27,7 @@ namespace robotmotors {
                 motor->SetSensorPhase(it->second != 0);
 
             //master follower TODO (have to figure this one out)
+            //TODO look at also reciving device type to follow
             else if (it->first == "follower"){
                 motor->Set(ctre::phoenix::motorcontrol::ControlMode::Follower, (int)it->second);
                 followerLock = true;
