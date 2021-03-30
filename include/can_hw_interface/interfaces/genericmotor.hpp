@@ -19,10 +19,11 @@ namespace robotmotors {
     };
 
     struct MotorMap {
-    std::string topicName;
-    int canID;
-    std::map<std::string, double> config;
-};
+        std::string topicName;
+        std::string motorType;
+        int canID;
+        std::map<std::string, double> config;
+    };
 
     class GenericMotor {
     public:
