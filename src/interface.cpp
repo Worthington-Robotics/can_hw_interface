@@ -121,6 +121,17 @@ int main(int argc, char** argv) {
     leftMap.config = leftConfig;
     test.push_back(leftMap);
 
+    std::map<std::string, double> leftFollower = std::map<std::string, double>();
+    leftFollower["motor_inverted"] = 1;
+    leftFollower["curr_limit_enable"] = 0;
+    leftFollower["feedback_rate"] = 5;
+    leftFollower["neutral_brake"] = 1;
+    leftFollower["vcomp_voltage"] = 11.0;
+    leftFollower["follower"] = 1;
+    MotorMap leftFollowerMap = MotorMap();
+    leftFollowerMap.canID = 2; leftFollowerMap.topicName = "left_follower"; leftFollowerMap.config = leftFollower;
+    test.push_back(leftFollowerMap);
+
     std::map<std::string, double> rightConfig = std::map<std::string, double>();
     rightConfig["motor_inverted"] = 0;
     rightConfig["curr_limit_enable"] = 0;
@@ -128,10 +139,19 @@ int main(int argc, char** argv) {
     rightConfig["neutral_brake"] = 1;
     rightConfig["vcomp_voltage"] = 11.0;
     MotorMap rightMap = MotorMap();
-    rightMap.canID = 3;
-    rightMap.topicName = "right";
-    rightMap.config = rightConfig;
+    rightMap.canID = 3; rightMap.topicName = "right"; rightMap.config = rightConfig;
     test.push_back(rightMap);
+
+    std::map<std::string, double> rightFollower = std::map<std::string, double>();
+    rightFollower["motor_inverted"] = 0;
+    rightFollower["curr_limit_enable"] = 0;
+    rightFollower["feedback_rate"] = 5;
+    rightFollower["neutral_brake"] = 1;
+    rightFollower["vcomp_voltage"] = 11.0;
+    rightFollower["follower"] = 3;
+    MotorMap rightFollowerMap = MotorMap();
+    rightFollowerMap.canID = 4; rightFollowerMap.topicName = "right_follower"; rightFollowerMap.config = rightFollower;
+    test.push_back(rightFollowerMap);
 
     rosNode->setMotors(test);
 
