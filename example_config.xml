@@ -41,11 +41,71 @@
                 <canid>1</canid>
             </follow>
             <feedback>
+                <rate>255</rate>
+                <position>false</position>
+                <velocity>false</velocity>
+                <current>false</current>
+                <voltage>false</voltage>
+            </feedback>
+            <current_limit>
+                <enable>false</enable>
+                <trigger>20</trigger>
+                <val>10</val>
+                <time>0.5</time>
+            </current_limit>
+            <pid_config>
+                <kp>10</kp>
+                <ki>10</ki>
+                <kd>15</kd>
+                <kf>5</kf>
+                <izone>300</izone>
+            </pid_config>
+        </motor>
+        <motor>
+            <topic>right</topic>
+            <canid>3</canid>
+            <type>talonfx</type>
+            <motor_inverted>false</motor_inverted>
+            <neutral_brake>true</neutral_brake>
+            <vcomp_voltage>11.0</vcomp_voltage>
+            <feedback>
                 <rate>5</rate>
                 <position>true</position>
                 <velocity>true</velocity>
                 <current>true</current>
                 <voltage>true</voltage>
+            </feedback>
+            <current_limit>
+                <enable>false</enable>
+                <trigger>20</trigger>
+                <val>10</val>
+                <time>0.5</time>
+            </current_limit>
+            <pid_config>
+                <kp>10</kp>
+                <ki>10</ki>
+                <kd>15</kd>
+                <kf>5</kf>
+                <izone>300</izone>
+            </pid_config>
+        </motor>
+        <motor>
+            <topic>right_follower</topic>
+            <canid>4</canid>
+            <type>talonfx</type>
+            <motor_inverted>false</motor_inverted>
+            <neutral_brake>true</neutral_brake>
+            <vcomp_voltage>11.0</vcomp_voltage>
+            <follow>
+                <type>talonfx</type>
+                <canid>3</canid>
+            </follow>
+            <feedback>
+                <rate>255</rate>
+                <position>false</position>
+                <velocity>false</velocity>
+                <current>false</current>
+                <voltage>false</voltage>
             </feedback>
             <current_limit>
                 <enable>false</enable>

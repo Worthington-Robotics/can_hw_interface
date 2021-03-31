@@ -78,7 +78,7 @@ namespace robotmotors {
         //final combined configs
         motor->ConfigStatorCurrentLimit({currentLimEnable, currentLimitVal, currentLimitTrigger, currentLimitTime});
 
-        std::cout << "config complete. last error code is " << motor->GetLastError() << std::endl;
+        //std::cout << "config complete. last error code is " << motor->GetLastError() << std::endl;
 
         return motor->GetLastError() == OK;
     }

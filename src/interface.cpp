@@ -57,7 +57,6 @@ public:
                     motor = std::make_shared<robotmotors::VictorSpxMotor>(it->canID);
                 else
                     throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
-                RCLCPP_INFO(this->get_logger(), "created device");
 
                 //configuration phase
                 if (!motor->configure(it->config)) {
@@ -69,8 +68,6 @@ public:
                                                                                                    std::bind(&robotmotors::GenericMotor::setCallback, motor, _1)));
 
                 this->motors[it->canID] = motor;
-
-                RCLCPP_INFO(this->get_logger(), "registered motor");
             }
         } catch (const std::exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Failed to bind motor\nCause: %s", e.what());
@@ -107,38 +104,34 @@ int main(int argc, char** argv) {
     ctre::phoenix::platform::can::SetCANInterface(interface.c_str());
 
     std::string xmlDoc = "config.xml";
-
     TiXmlDocument* doc = new TiXmlDocument(xmlDoc);
     if (! doc->LoadFile()) {
         RCLCPP_ERROR(rosNode->get_logger(), "Error parsing XML config\n %s", doc->ErrorDesc());
-        return -1;
+    } else {
+        try {
+            std::shared_ptr<std::vector<robotmotors::MotorMap>> motors = robotmotors::createMotorMap(doc);
+            RCLCPP_INFO(rosNode->get_logger(), "Recieved config for %d motor(s)", motors->size());
+            rosNode->setMotors(motors);
+
+            //set all motors to neutral
+            rosNode->neutralMotors();
+
+            RCLCPP_INFO(rosNode->get_logger(), "hardware interface node loaded using can interface %s", interface.c_str());
+
+            // serve the callbacks
+            rclcpp::spin(rosNode);
+
+            RCLCPP_INFO(rosNode->get_logger(), "hardware interface shutting down");
+
+            //set all motors to neutral
+            rosNode->neutralMotors();
+        } catch (const std::exception& e) {
+            RCLCPP_ERROR(rosNode->get_logger(), "Node failed\nCause: %s", e.what());
+        } catch (...) {
+            RCLCPP_ERROR(rosNode->get_logger(), "Node failed\nCause Unknown");
+        }
     }
-    RCLCPP_INFO(rosNode->get_logger(), "XML loading complete");
-
-
-    try {
-        std::shared_ptr<std::vector<robotmotors::MotorMap>> motors = robotmotors::createMotorMap(doc);
-        RCLCPP_INFO(rosNode->get_logger(), "Recieved config for %d motor(s)", motors->size());
-        rosNode->setMotors(motors);
-
-        //set all motors to neutral
-        rosNode->neutralMotors();
-
-        RCLCPP_INFO(rosNode->get_logger(), "hardware interface node loaded using can interface %s", interface.c_str());
-
-        // serve the callbacks
-        rclcpp::spin(rosNode);
-
-        RCLCPP_INFO(rosNode->get_logger(), "hardware interface shutting down");
-
-        //set all motors to neutral
-        rosNode->neutralMotors();
-    } catch (const std::exception& e) {
-        RCLCPP_ERROR(rosNode->get_logger(), "Node failed\nCause: %s", e.what());
-    } catch (...) {
-        RCLCPP_ERROR(rosNode->get_logger(), "Node failed\nCause Unknown");
-    }
-
+    
     delete doc;
 
     RCLCPP_INFO(rosNode->get_logger(), "hardware interface shut down complete");
