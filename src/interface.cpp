@@ -51,12 +51,17 @@ public:
 
                 //create callback
                 std::shared_ptr<robotmotors::GenericMotor> motor;
-                if (it->motorType == "talonfx")
-                    motor = std::make_shared<robotmotors::TalonFxMotor>(it->canID);
-                else if (it->motorType == "victorspx")
-                    motor = std::make_shared<robotmotors::VictorSpxMotor>(it->canID);
-                else
-                    throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
+                switch (it->motorType) {
+                    case robotmotors::VICTORSPX:
+                        motor = std::make_shared<robotmotors::VictorSpxMotor>(it->canID);
+                        break;
+                    case robotmotors::TALONFX:
+                        motor = std::make_shared<robotmotors::TalonFxMotor>(it->canID);
+                        break;
+                    case robotmotors::TALONSRX:
+                    default:
+                        throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
+                }
 
                 //configuration phase
                 if (!motor->configure(it->config)) {
@@ -105,7 +110,7 @@ int main(int argc, char** argv) {
 
     std::string xmlDoc = "config.xml";
     TiXmlDocument* doc = new TiXmlDocument(xmlDoc);
-    if (! doc->LoadFile()) {
+    if (!doc->LoadFile()) {
         RCLCPP_ERROR(rosNode->get_logger(), "Error parsing XML config\n %s", doc->ErrorDesc());
     } else {
         try {
@@ -131,7 +136,7 @@ int main(int argc, char** argv) {
             RCLCPP_ERROR(rosNode->get_logger(), "Node failed\nCause Unknown");
         }
     }
-    
+
     delete doc;
 
     RCLCPP_INFO(rosNode->get_logger(), "hardware interface shut down complete");

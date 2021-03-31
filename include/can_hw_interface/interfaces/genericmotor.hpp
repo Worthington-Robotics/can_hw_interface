@@ -10,6 +10,38 @@
 
 namespace robotmotors {
 
+    //List of valid & registered motor types
+    enum MotorType {
+        TALONFX,
+        TALONSRX,
+        VICTORSPX,
+        UNKNOWN
+    };
+
+    /**
+     * gets the internal motor type from its string representation
+     * @param motorType the string representation of the motor type
+     * @param type the MotorType variable to store the result in
+     * @returns true if there were no errors during the parse operation
+     **/
+    bool getMotorType(const std::string& motorType, MotorType& type);
+
+    /**
+     * gets the enum ordinal for motor type from its string value 
+     * @param motorType the string representation of the motor type
+     * @param ordinal the integer to store the resulting value
+     * @returns true if there was no errors parsing
+     **/
+    bool getMotorInt(std::string& motorType, int& ordinal);
+
+    /**
+     * gets the enum ordinal for motor type from its enum value 
+     * @param motorType the enum representation of the motor type
+     * @param ordinal the integer to store the resulting value
+     * @returns true if there was no errors parsing
+     **/
+    bool getMotorInt(MotorType motorType, int& ordinal);
+
     enum ControlMode {
         PERCENT_OUTPUT,
         POSITION_CONTROL,
@@ -20,7 +52,7 @@ namespace robotmotors {
 
     struct MotorMap {
         std::string topicName;
-        std::string motorType;
+        MotorType motorType;
         int canID;
         std::shared_ptr<std::map<std::string, double>> config;
     };
@@ -55,13 +87,13 @@ namespace robotmotors {
         /**
          * gets the status reporting message to be published containing feedback data
          * returns true if the device gave all values ok
-         **/ 
+         **/
         virtual bool getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) = 0;
 
         /**
          * callback for ROS messages to set the state of the motor
          * probably should call the generic form of the set function with the ROS message values
-         **/ 
+         **/
         virtual void setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) = 0;
 
         virtual ~GenericMotor() = default;

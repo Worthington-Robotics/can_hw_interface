@@ -41,8 +41,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
 ament_export_dependencies(rosidl_default_runtime)
 
+file(GLOB hw_interface_sources src/interface/**.cpp src/interface/motors/**.cpp)
+
 #declare executable
-add_executable(hw_interface src/interface.cpp src/motors/motorparser.cpp src/motors/talonfxmotor.cpp src/motors/victorspxmotor.cpp)
+add_executable(hw_interface src/interface.cpp ${hw_interface_sources})
 
 #trace include dirs
 target_include_directories(hw_interface PUBLIC
