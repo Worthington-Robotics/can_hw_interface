@@ -22,7 +22,7 @@ namespace robotmotors {
         std::string topicName;
         std::string motorType;
         int canID;
-        std::map<std::string, double> config;
+        std::shared_ptr<std::map<std::string, double>> config;
     };
 
     class GenericMotor {
@@ -37,7 +37,7 @@ namespace robotmotors {
          * the device is expected to be defaulted, then configured as expected
          * returns true if the device was configured without errors
          **/
-        virtual bool configure(std::map<std::string, double> & config) = 0;
+        virtual bool configure(std::shared_ptr<std::map<std::string, double>> config) = 0;
 
         /**
          * ROS service for configuring PIDF values dynamically while the controller is operating

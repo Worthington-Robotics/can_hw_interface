@@ -30,7 +30,7 @@ namespace robotmotors {
         VictorSpxMotor(int id);
 
         void getType(std::string& type) override;
-        bool configure(std::map<std::string, double>& config) override;
+        bool configure(std::shared_ptr<std::map<std::string, double>> config) override;
         void configPIDF(const std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Request> req,
                         std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Response> resp) override;
         void set(ControlMode mode, double output, double arbOutput) override;

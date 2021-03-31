@@ -12,14 +12,14 @@ namespace robotmotors {
         type = "talonfx";
     }
 
-    bool TalonFxMotor::configure(std::map<std::string, double>& config) {
+    bool TalonFxMotor::configure(std::shared_ptr<std::map<std::string, double>> config) {
         motor->ConfigFactoryDefault();
         motor->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor);
         motor->SelectProfileSlot(0, 0);
         double currentLimitVal = 0, currentLimitTime = 0, currentLimitTrigger = 0;
         bool currentLimEnable = false;
         //do general config things
-        for (std::map<std::string, double>::iterator it = config.begin(); it != config.end(); it++) {
+        for (std::map<std::string, double>::iterator it = config->begin(); it != config->end(); it++) {
             //physical inversion
             if (it->first == "motor_inverted")
                 motor->SetInverted(it->second != 0);
@@ -37,13 +37,13 @@ namespace robotmotors {
             else if (it->first == "feedback_rate")
                 motor->SetStatusFramePeriod(Status_2_Feedback0, (int)it->second, 0);
             else if (it->first == "feedback_position")
-                feedbackEn.at(0) = it->second != 0;
+                feedbackEn[0] = it->second != 0;
             else if (it->first == "feedback_velocity")
-                feedbackEn.at(1) = it->second != 0;
+                feedbackEn[1] = it->second != 0;
             else if (it->first == "feedback_current")
-                feedbackEn.at(2) = it->second != 0;
+                feedbackEn[2] = it->second != 0;
             else if (it->first == "feedback_voltage")
-                feedbackEn.at(3) = it->second != 0;
+                feedbackEn[3] = it->second != 0;
 
             //idle mode
             else if (it->first == "neutral_brake")
