@@ -23,11 +23,24 @@ using namespace std::chrono_literals;
 
 class HardwareController : public rclcpp::Node {
 private:
+
+    //list of all motors registered to the system
     std::map<int, std::shared_ptr<robotmotors::GenericMotor>> motors;
+
+    //list of all subscribed topics
     std::vector<std::string> topics;
+
+    //subscriptions for all motor inputs
     std::vector<rclcpp::Subscription<can_hw_interface::msg::MotorMsg>::SharedPtr> subscriptions;
+
+    //safety enable subscription that allows motors to be active
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safetySubscrip;
-    //rclcpp::TimerBase::SharedPtr timer;
+
+    //contains 3 timers used to execute update tasks
+    //index 0: high rate (10ms)
+    //index 1: medium rate (20ms)
+    //index 2: low rate (100ms)
+    std::vector<rclcpp::TimerBase::SharedPtr> timers;
 
 public:
     HardwareController() : Node("can_hw_interface") {
