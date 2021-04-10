@@ -6,6 +6,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <filesystem>
 
 #define Phoenix_No_WPI  // remove WPI dependencies
 #include "can_hw_interface/interfaces/motorparser.hpp"
@@ -121,10 +122,12 @@ int main(int argc, char** argv) {
     std::string interface = "can0";
     ctre::phoenix::platform::can::SetCANInterface(interface.c_str());
 
-    std::string xmlDoc = "config.xml";
-    TiXmlDocument* doc = new TiXmlDocument(xmlDoc);
+    // Load the xml file
+    std::filesystem::path config = std::filesystem::current_path() / "config.xml";
+    TiXmlDocument* doc = new TiXmlDocument(config.c_str());
     if (!doc->LoadFile()) {
-        RCLCPP_ERROR(rosNode->get_logger(), "Error parsing XML config\n %s", doc->ErrorDesc());
+        RCLCPP_ERROR(rosNode->get_logger(), "Error parsing XML config %s\n %s", config.c_str(), doc->ErrorDesc());
+
     } else {
         try {
             std::shared_ptr<std::vector<robotmotors::MotorMap>> motors = robotmotors::createMotorMap(doc);
