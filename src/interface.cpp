@@ -19,6 +19,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
 
+#define SAFETY_TIMEOUT_MS 100
+
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
@@ -96,7 +98,7 @@ public:
     }
 
     void feedSafety(std::shared_ptr<std_msgs::msg::Bool> msg) {
-        if (msg->data) ctre::phoenix::unmanaged::FeedEnable(100);
+        if (msg->data) ctre::phoenix::unmanaged::FeedEnable(SAFETY_TIMEOUT_MS);
     }
 
     void neutralMotors() {
