@@ -18,6 +18,7 @@ namespace robotmotors {
         motor->SelectProfileSlot(0, 0);
         double currentLimitVal = 0, currentLimitTime = 0, currentLimitTrigger = 0;
         bool currentLimEnable = false;
+        feedbackEn.resize(4);
         //do general config things
         for (std::map<std::string, double>::iterator it = config->begin(); it != config->end(); it++) {
             //physical inversion
@@ -33,6 +34,7 @@ namespace robotmotors {
             }
 
             //feedback settings
+            feedbackEn.resize(4);
             else if (it->first == "feedback_rate")
                 motor->SetStatusFramePeriod(Status_2_Feedback0, (int)it->second, 0);
             else if (it->first == "feedback_position")
