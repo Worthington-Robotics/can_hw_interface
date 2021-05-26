@@ -20,8 +20,11 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(Threads REQUIRED)
+# HID libs
 find_package(SDL2 REQUIRED)
+# ros2 client libs
 find_package(rclcpp REQUIRED)
+#xml parser libs
 find_package(tinyxml_vendor REQUIRED)
 find_package(TinyXML REQUIRED)
 
