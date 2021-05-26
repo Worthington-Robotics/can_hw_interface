@@ -1,25 +1,25 @@
-#include "can_hw_interface/interfaces/motors/talonfxmotor.hpp"
+#include "can_hw_interface/interfaces/motors/talonsrxmotor.hpp"
 #include <iostream>
 
 
 namespace robotmotors {
 
-    TalonFxMotor::TalonFxMotor(int id) {
-        motor = new TalonFX(id);
+    TalonSrxMotor::TalonSrxMotor(int id) {
+        motor = new TalonSRX(id);
     }
 
-    void TalonFxMotor::getType(std::string& type) {
+    void TalonSrxMotor::getType(std::string& type) {
         type = "talonsrx";
     }
 
-    bool TalonFxMotor::configure(std::map<std::string, double>& config) {
+    bool TalonSrxMotor::configure(std::shared_ptr<std::map<std::string, double>> config){
         motor->ConfigFactoryDefault();
-        motor->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor);
+        motor->ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0);
         motor->SelectProfileSlot(0, 0);
         double currentLimitVal = 0, currentLimitTime = 0, currentLimitTrigger = 0;
         bool currentLimEnable = false;
         //do general config things
-        for (std::map<std::string, double>::iterator it = config.begin(); it != config.end(); it++) {
+        for (std::map<std::string, double>::iterator it = config->begin(); it != config->end(); it++) {
             //physical inversion
             if (it->first == "motor_inverted")
                 motor->SetInverted(it->second != 0);
@@ -75,14 +75,14 @@ namespace robotmotors {
         }
 
         //final combined configs
-        motor->ConfigStatorCurrentLimit({currentLimEnable, currentLimitVal, currentLimitTrigger, currentLimitTime});
+        motor->ConfigSupplyCurrentLimit({currentLimEnable, currentLimitVal, currentLimitTrigger, currentLimitTime});
 
         std::cout << "config complete. last error code is " << motor->GetLastError() << std::endl;
 
         return motor->GetLastError() == OK;
     }
 
-    void TalonFxMotor::configPIDF(const std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Request> req,
+    void TalonSrxMotor::configPIDF(const std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Request> req,
                                   std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Response> resp) {
         motor->SelectProfileSlot(req->pid_slot, 0);
         motor->Config_kP(req->pid_slot, req->k_p, 0);
@@ -97,7 +97,7 @@ namespace robotmotors {
      * used to set the output of the motor as well as the output mode
      * if the device is a follower, no call to update the motor is made 
      **/
-    void TalonFxMotor::set(ControlMode mode, double output, double arbOutput) {
+    void TalonSrxMotor::set(ControlMode mode, double output, double arbOutput) {
         if(followerLock) return;
         if(mode == POSITION_CONTROL){
             motor->Set(ctre::phoenix::motorcontrol::ControlMode::Position, output, DemandType::DemandType_ArbitraryFeedForward, arbOutput);
@@ -114,7 +114,7 @@ namespace robotmotors {
     }
 
     // TODO continue for other feedback data needs
-    bool TalonFxMotor::getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) {
+    bool TalonSrxMotor::getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) {
         if(feedbackEn.at(0)) msg->position = motor->GetSelectedSensorPosition();
         if(feedbackEn.at(1)) msg->velocity = motor->GetSelectedSensorVelocity();
         if(feedbackEn.at(2)) msg->current = motor->GetStatorCurrent();

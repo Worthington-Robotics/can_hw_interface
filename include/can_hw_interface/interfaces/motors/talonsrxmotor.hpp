@@ -15,7 +15,7 @@ namespace robotmotors {
     private:
 
         //CTRE motor object itself
-        TalonSRX* motor;
+        TalonSRX * motor;
 
         //locks out set calls while in follower mode
         bool followerLock = false;
@@ -49,7 +49,7 @@ namespace robotmotors {
          * @param config : maps string config setting names to double setting values as determined by the method
          * @return : config successful
          */
-        bool configure(std::map<std::string, double>& config) override;
+        bool configure(std::shared_ptr<std::map<std::string, double>> config) override;
 
         /*
          * configs the PIDF of this with the given parameters in req

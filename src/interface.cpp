@@ -12,6 +12,7 @@
 #include "can_hw_interface/interfaces/motorparser.hpp"
 #include "can_hw_interface/interfaces/motors/talonfxmotor.hpp"
 #include "can_hw_interface/interfaces/motors/victorspxmotor.hpp"
+#include "can_hw_interface/interfaces/motors/talonsrxmotor.hpp"
 #include "ctre/Phoenix.h"
 #include "ctre/phoenix/cci/Unmanaged_CCI.h"
 #include "ctre/phoenix/platform/Platform.h"
@@ -75,6 +76,8 @@ public:
                         motor = std::make_shared<robotmotors::TalonFxMotor>(it->canID);
                         break;
                     case robotmotors::TALONSRX:
+                        motor = std::make_shared<robotmotors::TalonSrxMotor>(it->canID);
+                        break;
                     default:
                         throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
                 }
