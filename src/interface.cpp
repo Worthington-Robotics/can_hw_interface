@@ -6,8 +6,10 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <filesystem>
 
 #define Phoenix_No_WPI  // remove WPI dependencies
+#include "can_hw_interface/interfaces/motorparser.hpp"
 #include "can_hw_interface/interfaces/motors/talonfxmotor.hpp"
 #include "can_hw_interface/interfaces/motors/victorspxmotor.hpp"
 #include "ctre/Phoenix.h"
@@ -17,56 +19,76 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
 
+#define SAFETY_TIMEOUT_MS 100
+
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
 class HardwareController : public rclcpp::Node {
 private:
-    std::map<int, robotmotors::GenericMotor*> motors;
+
+    //list of all motors registered to the system
+    std::map<int, std::shared_ptr<robotmotors::GenericMotor>> motors;
+
+    //list of all subscribed topics
     std::vector<std::string> topics;
+
+    //subscriptions for all motor inputs
     std::vector<rclcpp::Subscription<can_hw_interface::msg::MotorMsg>::SharedPtr> subscriptions;
+
+    //safety enable subscription that allows motors to be active
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safetySubscrip;
-    //rclcpp::TimerBase::SharedPtr timer;
+
+    //contains 3 timers used to execute update tasks
+    //index 0: high rate (10ms)
+    //index 1: medium rate (20ms)
+    //index 2: low rate (100ms)
+    std::vector<rclcpp::TimerBase::SharedPtr> timers;
 
 public:
     HardwareController() : Node("can_hw_interface") {
-        motors = std::map<int, robotmotors::GenericMotor*>();
+        motors = std::map<int, std::shared_ptr<robotmotors::GenericMotor>>();
         subscriptions = std::vector<rclcpp::Subscription<can_hw_interface::msg::MotorMsg>::SharedPtr>();
         safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1));
     }
 
-    void setMotors(std::vector<robotmotors::MotorMap> motorConfig) {
+    void setMotors(std::shared_ptr<std::vector<robotmotors::MotorMap>> motorConfig) {
         try {
             //create all motors
-            for (robotmotors::MotorMap motorMap : motorConfig) {
-                motorMap.topicName = "can_hw_interface/" + motorMap.topicName;
+            for (auto it = motorConfig->begin(); it != motorConfig->end(); it++) {
+                it->topicName = "can_hw_interface/" + it->topicName;
 
-                auto existingElem = std::find(topics.begin(), topics.end(), motorMap.topicName);
+                auto existingElem = std::find(topics.begin(), topics.end(), it->topicName);
                 if (existingElem != topics.begin() && existingElem != topics.end()) {
-                    throw std::runtime_error("Attempted to create duplicate topic with name " + motorMap.topicName);
+                    throw std::runtime_error("Attempted to create duplicate topic with name " + it->topicName);
                 }
-                RCLCPP_INFO(this->get_logger(), "creating device on topic %s with ID %d", motorMap.topicName.c_str(), motorMap.canID);
-                topics.push_back(motorMap.topicName);
+                RCLCPP_INFO(this->get_logger(), "creating device on topic %s with ID %d", it->topicName.c_str(), it->canID);
+                topics.push_back(it->topicName);
 
                 //create callback
-                robotmotors::GenericMotor* motor;
-                if(motorMap.motorType == "talonfx") motor = new robotmotors::TalonFxMotor(motorMap.canID);
-                else if (motorMap.motorType == "victorspx") motor = new robotmotors::VictorSpxMotor(motorMap.canID);
-                else throw std::runtime_error("No valid motor type defined. Got: " + motorMap.motorType);
-                RCLCPP_INFO(this->get_logger(), "created device");
+                std::shared_ptr<robotmotors::GenericMotor> motor;
+                switch (it->motorType) {
+                    case robotmotors::VICTORSPX:
+                        motor = std::make_shared<robotmotors::VictorSpxMotor>(it->canID);
+                        break;
+                    case robotmotors::TALONFX:
+                        motor = std::make_shared<robotmotors::TalonFxMotor>(it->canID);
+                        break;
+                    case robotmotors::TALONSRX:
+                    default:
+                        throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
+                }
 
                 //configuration phase
-                if (!motor->configure(motorMap.config)) {
+                if (!motor->configure(it->config)) {
                     throw std::runtime_error("Device returned non-ok error code after configuration");
                 }
 
                 //push the callback and subscription onto their vectors
-                subscriptions.push_back(this->create_subscription<can_hw_interface::msg::MotorMsg>(motorMap.topicName, 10,
+                subscriptions.push_back(this->create_subscription<can_hw_interface::msg::MotorMsg>(it->topicName, 10,
                                                                                                    std::bind(&robotmotors::GenericMotor::setCallback, motor, _1)));
 
-                this->motors[motorMap.canID] = motor;
-
-                RCLCPP_INFO(this->get_logger(), "registered motor");
+                this->motors[it->canID] = motor;
             }
         } catch (const std::exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Failed to bind motor\nCause: %s", e.what());
@@ -76,7 +98,7 @@ public:
     }
 
     void feedSafety(std::shared_ptr<std_msgs::msg::Bool> msg) {
-        if (msg->data) ctre::phoenix::unmanaged::FeedEnable(100);
+        if (msg->data) ctre::phoenix::unmanaged::FeedEnable(SAFETY_TIMEOUT_MS);
     }
 
     void neutralMotors() {
@@ -88,9 +110,6 @@ public:
     //TODO fix error here
     ~HardwareController() {
         neutralMotors();
-        for (size_t i = 0; i < motors.size(); i++) {
-            delete motors.at(i);
-        }
         motors.clear();
     }
 };
@@ -105,76 +124,38 @@ int main(int argc, char** argv) {
     std::string interface = "can0";
     ctre::phoenix::platform::can::SetCANInterface(interface.c_str());
 
-    std::string xmlDoc = "";
+    // Load the xml file
+    std::filesystem::path config = std::filesystem::current_path() / "config.xml";
+    TiXmlDocument* doc = new TiXmlDocument(config.c_str());
+    if (!doc->LoadFile()) {
+        RCLCPP_ERROR(rosNode->get_logger(), "Error parsing XML config %s\n %s", config.c_str(), doc->ErrorDesc());
 
-    /* make some talons for drive train */
-    std::vector<robotmotors::MotorMap> test = std::vector<robotmotors::MotorMap>();
+    } else {
+        try {
+            std::shared_ptr<std::vector<robotmotors::MotorMap>> motors = robotmotors::createMotorMap(doc);
+            RCLCPP_INFO(rosNode->get_logger(), "Recieved config for %d motor(s)", motors->size());
+            rosNode->setMotors(motors);
 
-    TiXmlDocument * doc = new TiXmlDocument();
-    doc->Parse(xmlDoc.c_str(), 0, TIXML_ENCODING_UNKNOWN);
+            //set all motors to neutral
+            rosNode->neutralMotors();
 
-    std::map<std::string, double> leftConfig = std::map<std::string, double>();
-    leftConfig["motor_inverted"] = 1;
-    leftConfig["neutral_brake"] = 1;
-    leftConfig["vcomp_voltage"] = 11.0;
-    robotmotors::MotorMap leftMap = robotmotors::MotorMap();
-    leftMap.canID = 1;
-    leftMap.motorType = "victorspx";
-    leftMap.topicName = "left";
-    leftMap.config = leftConfig;
-    test.push_back(leftMap);
+            RCLCPP_INFO(rosNode->get_logger(), "hardware interface node loaded using can interface %s", interface.c_str());
 
-    /*std::map<std::string, double> leftFollower = std::map<std::string, double>();
-    leftFollower["motor_inverted"] = 1;
-    leftFollower["curr_limit_enable"] = 0;
-    leftFollower["feedback_rate"] = 5;
-    leftFollower["neutral_brake"] = 1;
-    leftFollower["vcomp_voltage"] = 11.0;
-    leftFollower["follower"] = 1;
-    robotmotors::MotorMap leftFollowerMap = robotmotors::MotorMap();
-    leftFollowerMap.canID = 2;
-    leftFollowerMap.topicName = "left_follower";
-    leftFollowerMap.config = leftFollower;
-    test.push_back(leftFollowerMap);*/
+            // serve the callbacks
+            rclcpp::spin(rosNode);
 
-    std::map<std::string, double> rightConfig = std::map<std::string, double>();
-    rightConfig["motor_inverted"] = 0;
-    rightConfig["neutral_brake"] = 1;
-    rightConfig["vcomp_voltage"] = 11.0;
-    robotmotors::MotorMap rightMap = robotmotors::MotorMap();
-    rightMap.canID = 3;
-    rightMap.topicName = "right";
-    rightMap.motorType = "victorspx";
-    rightMap.config = rightConfig;
-    test.push_back(rightMap);
+            RCLCPP_INFO(rosNode->get_logger(), "hardware interface shutting down");
 
-    /*std::map<std::string, double> rightFollower = std::map<std::string, double>();
-    rightFollower["motor_inverted"] = 0;
-    rightFollower["curr_limit_enable"] = 0;
-    rightFollower["feedback_rate"] = 5;
-    rightFollower["neutral_brake"] = 1;
-    rightFollower["vcomp_voltage"] = 11.0;
-    rightFollower["follower"] = 3;
-    robotmotors::MotorMap rightFollowerMap = robotmotors::MotorMap();
-    rightFollowerMap.canID = 4;
-    rightFollowerMap.topicName = "right_follower";
-    rightFollowerMap.config = rightFollower;
-    test.push_back(rightFollowerMap);*/
+            //set all motors to neutral
+            rosNode->neutralMotors();
+        } catch (const std::exception& e) {
+            RCLCPP_ERROR(rosNode->get_logger(), "Node failed\nCause: %s", e.what());
+        } catch (...) {
+            RCLCPP_ERROR(rosNode->get_logger(), "Node failed\nCause Unknown");
+        }
+    }
 
-    rosNode->setMotors(test);
-
-    //set all motors to neutral
-    rosNode->neutralMotors();
-
-    RCLCPP_INFO(rosNode->get_logger(), "hardware interface node loaded using can interface %s", interface.c_str());
-
-    // serve the callbacks
-    rclcpp::spin(rosNode);
-
-    RCLCPP_INFO(rosNode->get_logger(), "hardware interface shutting down");
-
-    //set all motors to neutral
-    rosNode->neutralMotors();
+    delete doc;
 
     RCLCPP_INFO(rosNode->get_logger(), "hardware interface shut down complete");
 

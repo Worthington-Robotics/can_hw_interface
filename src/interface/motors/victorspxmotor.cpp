@@ -11,10 +11,10 @@ namespace robotmotors {
         type = "victorspx";
     }
 
-    bool VictorSpxMotor::configure(std::map<std::string, double>& config) {
+    bool VictorSpxMotor::configure(std::shared_ptr<std::map<std::string, double>> config) {
         motor->ConfigFactoryDefault();
         //do general config things
-        for (std::map<std::string, double>::iterator it = config.begin(); it != config.end(); it++) {
+        for (std::map<std::string, double>::iterator it = config->begin(); it != config->end(); it++) {
             //physical inversion
             if (it->first == "motor_inverted")
                 motor->SetInverted(it->second != 0);

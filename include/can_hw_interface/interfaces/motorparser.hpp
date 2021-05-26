@@ -5,10 +5,10 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <exception>
 
 #include "genericmotor.hpp"
 
 namespace robotmotors {
-    std::vector<robotmotors::MotorMap> createMotorMap(TiXmlDocument* doc);
-
+    std::shared_ptr<std::vector<robotmotors::MotorMap>> createMotorMap(TiXmlDocument* doc);
 }  // namespace robotmotors
