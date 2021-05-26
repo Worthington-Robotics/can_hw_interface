@@ -34,7 +34,6 @@ namespace robotmotors {
             }
 
             //feedback settings
-            feedbackEn.resize(4);
             else if (it->first == "feedback_rate")
                 motor->SetStatusFramePeriod(Status_2_Feedback0, (int)it->second, 0);
             else if (it->first == "feedback_position")
