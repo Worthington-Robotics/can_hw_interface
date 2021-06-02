@@ -20,8 +20,6 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(Threads REQUIRED)
-# HID libs
-find_package(SDL2 REQUIRED)
 # ros2 client libs
 find_package(rclcpp REQUIRED)
 #xml parser libs
@@ -79,7 +77,6 @@ else()
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/x86-64/libCTRE_PhoenixCore.a)
 endif()
 target_link_libraries(hw_interface Threads::Threads)
-target_link_libraries(hw_interface ${SDL2_LIBRARIES})
 target_link_libraries(hw_interface ${TinyXML_LIBRARIES})
 
 rosidl_target_interfaces(hw_interface
