@@ -57,10 +57,11 @@ target_include_directories(hw_interface PUBLIC
 if (${CMAKE_LIBRARY_ARCHITECTURE} STREQUAL "arm-linux-gnueabihf") # Jetson TK1 / Pi
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/raspberry/libCTRE_Phoenix.a)
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/raspberry/libCTRE_PhoenixCCI.a)
-	target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/raspberry/libCTRE_PhoenixDiagnostics.a)
+	  target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/raspberry/libCTRE_PhoenixDiagnostics.a)
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/raspberry/libCTRE_PhoenixPlatform_socketcan.a)
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/raspberry/libCTRE_PhoenixCanutils.a)
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/raspberry/libCTRE_PhoenixCore.a)
+    target_link_libraries(hw_interface -lstdc++fs)
 elseif (${CMAKE_LIBRARY_ARCHITECTURE} STREQUAL "aarch64-linux-gnu") # Jetson TX2
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/jetsontx/libCTRE_Phoenix.a)
     target_link_libraries(hw_interface ${CMAKE_SOURCE_DIR}/lib/jetsontx/libCTRE_PhoenixCCI.a)
