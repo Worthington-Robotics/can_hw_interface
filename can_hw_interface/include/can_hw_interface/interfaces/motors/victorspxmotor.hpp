@@ -11,9 +11,9 @@
 
 namespace robotmotors {
 
-    class TalonFxMotor : public GenericMotor {
+    class VictorSpxMotor : public GenericMotor {
     private:
-        TalonFX* motor;
+        VictorSPX* motor;
 
         bool followerLock = false;
 
@@ -24,19 +24,19 @@ namespace robotmotors {
         //3 -- voltage
         //4 -- lower limit
         //5 -- upper limit
-        std::vector<bool> feedbackEn = {false, false, false, false , false};
+        std::vector<bool> feedbackEn;
 
     public:
-        TalonFxMotor(int id);
+        VictorSpxMotor(int id);
 
         void getType(std::string& type) override;
         bool configure(std::shared_ptr<std::map<std::string, double>> config) override;
-        void configPIDF(const std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Request> req,
-                        std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Response> resp) override;
+        void configPIDF(const std::shared_ptr<can_msgs::srv::SetPIDFGains::Request> req,
+                        std::shared_ptr<can_msgs::srv::SetPIDFGains::Response> resp) override;
         void set(ControlMode mode, double output, double arbOutput) override;
-        bool getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) override;
-        void setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) override;
+        bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) override;
+        void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) override;
 
-        ~TalonFxMotor();
+        ~VictorSpxMotor();
     };
 }

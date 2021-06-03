@@ -3,9 +3,9 @@
 #include <map>
 #include <string>
 
-#include "can_hw_interface/msg/motor_msg.hpp"
-#include "can_hw_interface/msg/motor_status_msg.hpp"
-#include "can_hw_interface/srv/set_pidf_gains.hpp"
+#include "can_msgs/msg/motor_msg.hpp"
+#include "can_msgs/msg/motor_status_msg.hpp"
+#include "can_msgs/srv/set_pidf_gains.hpp"
 #include "genericsensor.hpp"
 
 namespace robotmotors {
@@ -75,8 +75,8 @@ namespace robotmotors {
          * ROS service for configuring PIDF values dynamically while the controller is operating
          * This should be a stable and deterministic method of configuration
          **/
-        virtual void configPIDF(const std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Request> req,
-                                std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Response> resp) = 0;
+        virtual void configPIDF(const std::shared_ptr<can_msgs::srv::SetPIDFGains::Request> req,
+                                std::shared_ptr<can_msgs::srv::SetPIDFGains::Response> resp) = 0;
 
         /**
          * generic set function for internal calls
@@ -88,13 +88,13 @@ namespace robotmotors {
          * gets the status reporting message to be published containing feedback data
          * returns true if the device gave all values ok
          **/
-        virtual bool getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) = 0;
+        virtual bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) = 0;
 
         /**
          * callback for ROS messages to set the state of the motor
          * probably should call the generic form of the set function with the ROS message values
          **/
-        virtual void setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) = 0;
+        virtual void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) = 0;
 
         virtual ~GenericMotor() = default;
     };

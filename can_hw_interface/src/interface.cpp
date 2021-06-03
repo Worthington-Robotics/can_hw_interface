@@ -35,7 +35,7 @@ private:
     std::vector<std::string> topics;
 
     //subscriptions for all motor inputs
-    std::vector<rclcpp::Subscription<can_hw_interface::msg::MotorMsg>::SharedPtr> subscriptions;
+    std::vector<rclcpp::Subscription<can_msgs::msg::MotorMsg>::SharedPtr> subscriptions;
 
     //safety enable subscription that allows motors to be active
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safetySubscrip;
@@ -49,7 +49,7 @@ private:
 public:
     HardwareController() : Node("can_hw_interface") {
         motors = std::map<int, std::shared_ptr<robotmotors::GenericMotor>>();
-        subscriptions = std::vector<rclcpp::Subscription<can_hw_interface::msg::MotorMsg>::SharedPtr>();
+        subscriptions = std::vector<rclcpp::Subscription<can_msgs::msg::MotorMsg>::SharedPtr>();
         safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1));
     }
 
@@ -88,7 +88,7 @@ public:
                 }
 
                 //push the callback and subscription onto their vectors
-                subscriptions.push_back(this->create_subscription<can_hw_interface::msg::MotorMsg>(it->topicName, 10,
+                subscriptions.push_back(this->create_subscription<can_msgs::msg::MotorMsg>(it->topicName, 10,
                                                                                                    std::bind(&robotmotors::GenericMotor::setCallback, motor, _1)));
 
                 this->motors[it->canID] = motor;

@@ -47,8 +47,8 @@ namespace robotmotors {
         return motor->GetLastError() == OK;
     }
 
-    void VictorSpxMotor::configPIDF(const std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Request> req,
-                                  std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Response> resp) {
+    void VictorSpxMotor::configPIDF(const std::shared_ptr<can_msgs::srv::SetPIDFGains::Request> req,
+                                  std::shared_ptr<can_msgs::srv::SetPIDFGains::Response> resp) {
         motor->SelectProfileSlot(req->pid_slot, 0);
         motor->Config_kP(req->pid_slot, req->k_p, 0);
         motor->Config_kI(req->pid_slot, req->k_i, 0);
@@ -68,14 +68,14 @@ namespace robotmotors {
     }
 
     // TODO continue for other feedback data needs
-    bool VictorSpxMotor::getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) {
+    bool VictorSpxMotor::getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) {
         if(feedbackEn.at(0)) msg->position = motor->GetSelectedSensorPosition();
         if(feedbackEn.at(1)) msg->velocity = motor->GetSelectedSensorVelocity();
         if(feedbackEn.at(3)) msg->voltage = motor->GetBusVoltage();
         return motor->GetLastError() == OK;;
     }
 
-    void VictorSpxMotor::setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) {
+    void VictorSpxMotor::setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) {
         set(static_cast<ControlMode>(msg->control_mode), msg->demand, msg->arb_feedforward);
     }
 

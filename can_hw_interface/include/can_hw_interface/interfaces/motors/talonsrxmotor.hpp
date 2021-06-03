@@ -56,8 +56,8 @@ namespace robotmotors {
          * @param req : requests slot, k_p, k_i, k_d, k_f, i_max, pid_slot
          * @param resp : PIDF config successful
          */
-        void configPIDF(const std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Request> req,
-                        std::shared_ptr<can_hw_interface::srv::SetPIDFGains::Response> resp) override;
+        void configPIDF(const std::shared_ptr<can_msgs::srv::SetPIDFGains::Request> req,
+                        std::shared_ptr<can_msgs::srv::SetPIDFGains::Response> resp) override;
 
         /*
          * sets this to the given ControlMode PERCENT_OUTPUT, POSITION_CONTROL, VELOCITY_CONTROL, PROFILE_CONTROL, CURRENT_CONTROL
@@ -74,12 +74,12 @@ namespace robotmotors {
          * float32 voltage, float32 current, float64 position, float32 velocity, bool fwd_limit, bool rev_limit
          * @return message read successful
          */
-        bool getSensorMsg(const can_hw_interface::msg::MotorStatusMsg::SharedPtr msg) override;
+        bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) override;
 
         /*
          * sets this using the data from the msg file
          */
-        void setCallback(const can_hw_interface::msg::MotorMsg::SharedPtr msg) override;
+        void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) override;
 
         /*
          * destructs the TalonSRX object
