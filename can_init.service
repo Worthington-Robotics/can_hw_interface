@@ -1,0 +1,16 @@
+[Unit]
+Description=Service to initalize a USB to can bus bridge
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=ip link set can0 type can bitrate 1000000
+ExecStart=ifconfig can0 up
+ExecStart=ifconfig can0 txqueuelen 1000
+WorkingDirectory=/
+StandardOutput=inherit
+StandardError=inherit
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
