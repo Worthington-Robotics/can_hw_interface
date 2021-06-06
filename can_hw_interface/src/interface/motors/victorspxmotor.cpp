@@ -67,6 +67,12 @@ namespace robotmotors {
         motor->Set(ctre::phoenix::motorcontrol::ControlMode::PercentOutput, output, DemandType::DemandType_ArbitraryFeedForward, arbOutput);       
     }
 
+    bool VictorSpxMotor::registerHostNode(const rclcpp::Node & node){
+        
+    }
+
+
+    /*
     // TODO continue for other feedback data needs
     bool VictorSpxMotor::getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) {
         if(feedbackEn.at(0)) msg->position = motor->GetSelectedSensorPosition();
@@ -77,7 +83,7 @@ namespace robotmotors {
 
     void VictorSpxMotor::setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) {
         set(static_cast<ControlMode>(msg->control_mode), msg->demand, msg->arb_feedforward);
-    }
+    }*/
 
     VictorSpxMotor::~VictorSpxMotor() {
         delete motor;

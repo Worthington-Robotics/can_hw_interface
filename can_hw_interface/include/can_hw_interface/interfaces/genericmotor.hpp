@@ -7,6 +7,7 @@
 #include "can_msgs/msg/motor_status_msg.hpp"
 #include "can_msgs/srv/set_pidf_gains.hpp"
 #include "genericsensor.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 namespace robotmotors {
 
@@ -88,13 +89,7 @@ namespace robotmotors {
          * gets the status reporting message to be published containing feedback data
          * returns true if the device gave all values ok
          **/
-        virtual bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) = 0;
-
-        /**
-         * callback for ROS messages to set the state of the motor
-         * probably should call the generic form of the set function with the ROS message values
-         **/
-        virtual void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) = 0;
+        virtual bool registerHostNode(const rclcpp::Node & node) = 0;
 
         virtual ~GenericMotor() = default;
     };

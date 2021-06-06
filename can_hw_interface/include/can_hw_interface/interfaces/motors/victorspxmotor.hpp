@@ -34,8 +34,7 @@ namespace robotmotors {
         void configPIDF(const std::shared_ptr<can_msgs::srv::SetPIDFGains::Request> req,
                         std::shared_ptr<can_msgs::srv::SetPIDFGains::Response> resp) override;
         void set(ControlMode mode, double output, double arbOutput) override;
-        bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) override;
-        void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) override;
+        bool registerHostNode(const rclcpp::Node & node) override;
 
         ~VictorSpxMotor();
     };

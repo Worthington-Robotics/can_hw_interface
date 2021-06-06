@@ -70,16 +70,9 @@ namespace robotmotors {
         void set(ControlMode mode, double output, double arbOutput) override;
 
         /*
-         * updates the sensor data for this in the format
-         * float32 voltage, float32 current, float64 position, float32 velocity, bool fwd_limit, bool rev_limit
-         * @return message read successful
+         * 
          */
-        bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) override;
-
-        /*
-         * sets this using the data from the msg file
-         */
-        void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) override;
+        bool registerHostNode(const rclcpp::Node & node) override;
 
         /*
          * destructs the TalonSRX object

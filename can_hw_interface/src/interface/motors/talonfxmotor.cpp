@@ -115,8 +115,12 @@ namespace robotmotors {
         
     }
 
+    bool TalonFxMotor::registerHostNode(const rclcpp::Node & node){
+        
+    }
+
     // TODO continue for other feedback data needs
-    bool TalonFxMotor::getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) {
+    /*bool TalonFxMotor::getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) {
         if(feedbackEn.at(0)) msg->position = motor->GetSelectedSensorPosition();
         if(feedbackEn.at(1)) msg->velocity = motor->GetSelectedSensorVelocity();
         if(feedbackEn.at(2)) msg->current = motor->GetStatorCurrent();
@@ -126,7 +130,7 @@ namespace robotmotors {
 
     void TalonFxMotor::setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) {
         set(static_cast<ControlMode>(msg->control_mode), msg->demand, msg->arb_feedforward);
-    }
+    }*/
 
     TalonFxMotor::~TalonFxMotor() {
         delete motor;
