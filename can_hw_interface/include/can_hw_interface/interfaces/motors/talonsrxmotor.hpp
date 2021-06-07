@@ -29,6 +29,15 @@ namespace robotmotors {
         //5 -- upper limit
         std::vector<bool> feedbackEn;
 
+        // ros2 subscription pointer for listening on output demand topic
+        rclcpp::Subscription<can_msgs::msg::MotorMsg>::SharedPtr demands;
+
+        //ros2 timer to handle publishing data from sensors
+        rclcpp::TimerBase::SharedPtr updateTimer;
+
+        // ros2 publisher for publishing data from sensor inputs
+        rclcpp::Publisher<can_msgs::msg::MotorStatusMsg>::SharedPtr publisher;
+
     public:
 
         /*
@@ -49,7 +58,7 @@ namespace robotmotors {
          * @param config : maps string config setting names to double setting values as determined by the method
          * @return : config successful
          */
-        bool configure(std::shared_ptr<std::map<std::string, double>> config) override;
+        bool configure(rclcpp::Node & node, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) override;
 
         /*
          * configs the PIDF of this with the given parameters in req
@@ -70,9 +79,14 @@ namespace robotmotors {
         void set(ControlMode mode, double output, double arbOutput) override;
 
         /*
-         * 
+         *
          */
-        bool registerHostNode(const rclcpp::Node & node) override;
+        void publishNewSensorData();
+
+        /*
+         * sets this using the data from the msg file
+         */
+        void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) override;
 
         /*
          * destructs the TalonSRX object

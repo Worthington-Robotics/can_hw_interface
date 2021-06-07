@@ -59,6 +59,11 @@ namespace robotmotors {
     };
 
     class GenericMotor {
+
+    protected:
+        //string topic for the motor to use as a base
+        std::shared_ptr<std::string> topic;
+
     public:
         /**
          * gets a string alias for the motor controller type used internally 
@@ -70,7 +75,7 @@ namespace robotmotors {
          * the device is expected to be defaulted, then configured as expected
          * returns true if the device was configured without errors
          **/
-        virtual bool configure(std::shared_ptr<std::map<std::string, double>> config) = 0;
+        virtual bool configure(rclcpp::Node & node, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) = 0;
 
         /**
          * ROS service for configuring PIDF values dynamically while the controller is operating
@@ -86,10 +91,11 @@ namespace robotmotors {
         virtual void set(ControlMode mode, double output, double arbInput) = 0;
 
         /**
-         * gets the status reporting message to be published containing feedback data
-         * returns true if the device gave all values ok
+         * callback for ROS messages to set the state of the motor
+         * probably should call the generic form of the set function with the ROS message values
          **/
-        virtual bool registerHostNode(const rclcpp::Node & node) = 0;
+        virtual void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) = 0;
+
 
         virtual ~GenericMotor() = default;
     };

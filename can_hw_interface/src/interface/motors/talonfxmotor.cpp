@@ -1,6 +1,7 @@
 #include "can_hw_interface/interfaces/motors/talonfxmotor.hpp"
 #include <iostream>
 
+using std::placeholders::_1;
 
 namespace robotmotors {
 
@@ -12,7 +13,14 @@ namespace robotmotors {
         type = "talonfx";
     }
 
-    bool TalonFxMotor::configure(std::shared_ptr<std::map<std::string, double>> config) {
+    bool TalonFxMotor::configure(rclcpp::Node & node, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) {
+        topic = std::make_shared<std::string>(topicStr);
+
+        demands = node.create_subscription<can_msgs::msg::MotorMsg>(topic->c_str(), 10, std::bind(&TalonFxMotor::setCallback, this, _1));
+        
+        std::string pubTopic = (*topic) + "/sensor_data";
+        publisher = node.create_publisher<can_msgs::msg::MotorStatusMsg>(pubTopic , 10);
+
         motor->ConfigFactoryDefault();
         motor->ConfigSelectedFeedbackSensor(FeedbackDevice::IntegratedSensor);
         motor->SelectProfileSlot(0, 0);
@@ -35,8 +43,10 @@ namespace robotmotors {
             }
 
             //feedback settings
-            else if (it->first == "feedback_rate")
+            else if (it->first == "feedback_rate"){
                 motor->SetStatusFramePeriod(Status_2_Feedback0, (int)it->second, 0);
+                updateTimer = node.create_wall_timer(std::chrono::milliseconds((int)it->second), std::bind(&TalonFxMotor::publishNewSensorData, this));
+            }
             else if (it->first == "feedback_position")
                 feedbackEn.at(0) = it->second != 0;
             else if (it->first == "feedback_velocity")
@@ -115,8 +125,17 @@ namespace robotmotors {
         
     }
 
-    bool TalonFxMotor::registerHostNode(const rclcpp::Node & node){
-        
+    /*
+     *
+     */
+    void TalonFxMotor::publishNewSensorData(){
+        auto msg = can_msgs::msg::MotorStatusMsg();
+        if(feedbackEn.at(0)) msg.position = motor->GetSelectedSensorPosition();
+        if(feedbackEn.at(1)) msg.velocity = motor->GetSelectedSensorVelocity();
+        if(feedbackEn.at(2)) msg.current = motor->GetStatorCurrent();
+        if(feedbackEn.at(3)) msg.voltage = motor->GetBusVoltage();
+
+        publisher->publish(msg);
     }
 
     // TODO continue for other feedback data needs
@@ -126,11 +145,11 @@ namespace robotmotors {
         if(feedbackEn.at(2)) msg->current = motor->GetStatorCurrent();
         if(feedbackEn.at(3)) msg->voltage = motor->GetBusVoltage();
         return motor->GetLastError() == OK;;
-    }
+    }*/
 
     void TalonFxMotor::setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) {
         set(static_cast<ControlMode>(msg->control_mode), msg->demand, msg->arb_feedforward);
-    }*/
+    }
 
     TalonFxMotor::~TalonFxMotor() {
         delete motor;

@@ -34,22 +34,14 @@ private:
     //list of all subscribed topics
     std::vector<std::string> topics;
 
-    //subscriptions for all motor inputs
-    std::vector<rclcpp::Subscription<can_msgs::msg::MotorMsg>::SharedPtr> subscriptions;
-
     //safety enable subscription that allows motors to be active
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safetySubscrip;
 
-    //contains 3 timers used to execute update tasks
-    //index 0: high rate (10ms)
-    //index 1: medium rate (20ms)
-    //index 2: low rate (100ms)
-    std::vector<rclcpp::TimerBase::SharedPtr> timers;
+    bool initComplete = false;
 
 public:
     HardwareController() : Node("can_hw_interface") {
         motors = std::map<int, std::shared_ptr<robotmotors::GenericMotor>>();
-        subscriptions = std::vector<rclcpp::Subscription<can_msgs::msg::MotorMsg>::SharedPtr>();
         safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1));
     }
 
@@ -83,16 +75,14 @@ public:
                 }
 
                 //configuration phase
-                if (!motor->configure(it->config)) {
+                if (!motor->configure(*this, it->topicName, it->config)) {
                     throw std::runtime_error("Device returned non-ok error code after configuration");
                 }
 
-                //push the callback and subscription onto their vectors
-                subscriptions.push_back(this->create_subscription<can_msgs::msg::MotorMsg>(it->topicName, 10,
-                                                                                                   std::bind(&robotmotors::GenericMotor::setCallback, motor, _1)));
-
                 this->motors[it->canID] = motor;
             }
+
+            initComplete = true;
         } catch (const std::exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Failed to bind motor\nCause: %s", e.what());
         } catch (...) {
@@ -108,6 +98,10 @@ public:
         for (auto it = this->motors.begin(); it != this->motors.end(); it++) {
             it->second->set(robotmotors::PERCENT_OUTPUT, 0, 0);
         }
+    }
+
+    bool hasInit(){
+        return initComplete;
     }
 
     //TODO fix error here
@@ -138,6 +132,10 @@ int main(int argc, char** argv) {
             std::shared_ptr<std::vector<robotmotors::MotorMap>> motors = robotmotors::createMotorMap(doc);
             RCLCPP_INFO(rosNode->get_logger(), "Recieved config for %d motor(s)", motors->size());
             rosNode->setMotors(motors);
+
+            if(!rosNode->hasInit()){
+                throw std::runtime_error("Device initalization step failed. See above logs for more details.\nExiting");
+            }
 
             //set all motors to neutral
             rosNode->neutralMotors();
