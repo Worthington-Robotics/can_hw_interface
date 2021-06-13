@@ -2,17 +2,17 @@
 
 #include <chrono>
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
-#include <filesystem>
 
 #define Phoenix_No_WPI  // remove WPI dependencies
 #include "can_hw_interface/interfaces/motorparser.hpp"
 #include "can_hw_interface/interfaces/motors/talonfxmotor.hpp"
-#include "can_hw_interface/interfaces/motors/victorspxmotor.hpp"
 #include "can_hw_interface/interfaces/motors/talonsrxmotor.hpp"
+#include "can_hw_interface/interfaces/motors/victorspxmotor.hpp"
 #include "ctre/Phoenix.h"
 #include "ctre/phoenix/cci/Unmanaged_CCI.h"
 #include "ctre/phoenix/platform/Platform.h"
@@ -27,7 +27,6 @@ using namespace std::chrono_literals;
 
 class HardwareController : public rclcpp::Node {
 private:
-
     //list of all motors registered to the system
     std::map<int, std::shared_ptr<robotmotors::GenericMotor>> motors;
 
@@ -43,15 +42,26 @@ private:
 
     bool initComplete = false;
 
+    rclcpp::CallbackGroup::SharedPtr subs, pubs;
+    rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> subsOpt;
+
 public:
     HardwareController() : Node("can_hw_interface") {
         motors = std::map<int, std::shared_ptr<robotmotors::GenericMotor>>();
-        safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1));
+
+        // Register publisher ans subscriber callback groups
+        subs = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        pubs = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+        subsOpt = rclcpp::SubscriptionOptions();
+        subsOpt.callback_group = subs;
+
+        safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1), subsOpt);
 
         // Create publish timers at different rates
-        lowRate = create_wall_timer(100ms, std::bind(&HardwareController::lowRateCallback, this));
-        midRate = create_wall_timer(20ms, std::bind(&HardwareController::midRateCallback, this));
-        highRate = create_wall_timer(10ms, std::bind(&HardwareController::highRateCallback, this));
+        lowRate = create_wall_timer(100ms, std::bind(&HardwareController::lowRateCallback, this), pubs);
+        midRate = create_wall_timer(20ms, std::bind(&HardwareController::midRateCallback, this), pubs);
+        highRate = create_wall_timer(10ms, std::bind(&HardwareController::highRateCallback, this), pubs);
     }
 
     void setMotors(std::shared_ptr<std::vector<robotmotors::MotorMap>> motorConfig) {
@@ -70,34 +80,36 @@ public:
                 // Create callback
                 std::shared_ptr<robotmotors::GenericMotor> motor;
                 switch (it->motorType) {
-                    case robotmotors::VICTORSPX:
-                        motor = std::make_shared<robotmotors::VictorSpxMotor>(it->canID);
-                        break;
-                    case robotmotors::TALONFX:
-                        motor = std::make_shared<robotmotors::TalonFxMotor>(it->canID);
-                        break;
-                    case robotmotors::TALONSRX:
-                        motor = std::make_shared<robotmotors::TalonSrxMotor>(it->canID);
-                        break;
-                    default:
-                        throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
+                case robotmotors::VICTORSPX:
+                    motor = std::make_shared<robotmotors::VictorSpxMotor>(it->canID);
+                    break;
+                case robotmotors::TALONFX:
+                    motor = std::make_shared<robotmotors::TalonFxMotor>(it->canID);
+                    break;
+                case robotmotors::TALONSRX:
+                    motor = std::make_shared<robotmotors::TalonSrxMotor>(it->canID);
+                    break;
+                default:
+                    throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
                 }
 
                 // Configuration phase
-                if (!motor->configure(*this, it->topicName, it->config)) {
+                if (!motor->configure(*this, subsOpt, it->topicName, it->config)) {
                     throw std::runtime_error("Device returned non-ok error code after configuration");
                 }
 
                 // Make sure feedback rate is present
-                if(it->config->find("feedback_rate") != it->config->end()){
+                if (it->config->find("feedback_rate") != it->config->end()) {
                     // Add to high rate list
-                    if(it->config->at("feedback_rate") < 11.0) this->highRateMotors.push_back(motor);
+                    if (it->config->at("feedback_rate") < 11.0) this->highRateMotors.push_back(motor);
 
                     // Add to mid rate list
-                    else if(it->config->at("feedback_rate") < 21.0) this->midRateMotors.push_back(motor);
-                    
+                    else if (it->config->at("feedback_rate") < 21.0)
+                        this->midRateMotors.push_back(motor);
+
                     // Add to low rate list
-                    else this->lowRateMotors.push_back(motor);
+                    else
+                        this->lowRateMotors.push_back(motor);
                 }
 
                 this->motors[it->canID] = motor;
@@ -121,24 +133,24 @@ public:
         }
     }
 
-    bool hasInit(){
+    bool hasInit() {
         return initComplete;
     }
 
-    void lowRateCallback(){
-        for(auto &motor : lowRateMotors){
+    void lowRateCallback() {
+        for (auto& motor : lowRateMotors) {
             motor->publishNewSensorData();
         }
     }
 
-    void midRateCallback(){
-        for(auto &motor : midRateMotors){
+    void midRateCallback() {
+        for (auto& motor : midRateMotors) {
             motor->publishNewSensorData();
         }
     }
 
-    void highRateCallback(){
-        for(auto &motor : highRateMotors){
+    void highRateCallback() {
+        for (auto& motor : highRateMotors) {
             motor->publishNewSensorData();
         }
     }
@@ -153,7 +165,12 @@ public:
 int main(int argc, char** argv) {
     //init ros node
     rclcpp::init(argc, argv);
+
+    // You MUST use the MultiThreadedExecutor to use, well, multiple threads
+    rclcpp::executors::MultiThreadedExecutor executor;
+
     std::shared_ptr<HardwareController> rosNode = std::make_shared<HardwareController>();
+    executor.add_node(rosNode);
     RCLCPP_INFO(rosNode->get_logger(), "hardware interface node starting");
 
     //init canbus
@@ -172,7 +189,7 @@ int main(int argc, char** argv) {
             RCLCPP_INFO(rosNode->get_logger(), "Recieved config for %d motor(s)", motors->size());
             rosNode->setMotors(motors);
 
-            if(!rosNode->hasInit()){
+            if (!rosNode->hasInit()) {
                 throw std::runtime_error("Device initalization step failed. See above logs for more details.\nExiting");
             }
 
@@ -182,7 +199,7 @@ int main(int argc, char** argv) {
             RCLCPP_INFO(rosNode->get_logger(), "hardware interface node loaded using can interface %s", interface.c_str());
 
             // serve the callbacks
-            rclcpp::spin(rosNode);
+            executor.spin();
 
             RCLCPP_INFO(rosNode->get_logger(), "hardware interface shutting down");
 

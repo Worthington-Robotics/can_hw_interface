@@ -13,10 +13,10 @@ namespace robotmotors {
         type = "victorspx";
     }
 
-    bool VictorSpxMotor::configure(rclcpp::Node & node, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) {
+    bool VictorSpxMotor::configure(rclcpp::Node & node, rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> opts, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) {
         topic = std::make_shared<std::string>(topicStr);
 
-        demands = node.create_subscription<can_msgs::msg::MotorMsg>(topic->c_str(), 10, std::bind(&VictorSpxMotor::setCallback, this, _1));
+        demands = node.create_subscription<can_msgs::msg::MotorMsg>(topic->c_str(), 10, std::bind(&VictorSpxMotor::setCallback, this, _1), opts);
         
         std::string pubTopic = (*topic) + "/sensor_data";
         publisher = node.create_publisher<can_msgs::msg::MotorStatusMsg>(pubTopic , 10);

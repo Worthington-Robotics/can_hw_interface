@@ -58,7 +58,7 @@ namespace robotmotors {
          * @param config : maps string config setting names to double setting values as determined by the method
          * @return : config successful
          */
-        bool configure(rclcpp::Node & node, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) override;
+        bool configure(rclcpp::Node & node, rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> opts, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) override;
 
         /*
          * configs the PIDF of this with the given parameters in req

@@ -75,7 +75,7 @@ namespace robotmotors {
          * the device is expected to be defaulted, then configured as expected
          * returns true if the device was configured without errors
          **/
-        virtual bool configure(rclcpp::Node & node, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) = 0;
+        virtual bool configure(rclcpp::Node & node, rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> opts, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) = 0;
 
         /**
          * ROS service for configuring PIDF values dynamically while the controller is operating
