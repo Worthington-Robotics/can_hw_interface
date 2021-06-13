@@ -37,17 +37,26 @@ private:
     //safety enable subscription that allows motors to be active
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safetySubscrip;
 
+    rclcpp::TimerBase::SharedPtr lowRate, midRate, highRate;
+
+    std::vector<std::shared_ptr<robotmotors::GenericMotor>> lowRateMotors, midRateMotors, highRateMotors;
+
     bool initComplete = false;
 
 public:
     HardwareController() : Node("can_hw_interface") {
         motors = std::map<int, std::shared_ptr<robotmotors::GenericMotor>>();
         safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1));
+
+        // Create publish timers at different rates
+        lowRate = create_wall_timer(100ms, std::bind(&HardwareController::lowRateCallback, this));
+        midRate = create_wall_timer(20ms, std::bind(&HardwareController::midRateCallback, this));
+        highRate = create_wall_timer(5ms, std::bind(&HardwareController::highRateCallback, this));
     }
 
     void setMotors(std::shared_ptr<std::vector<robotmotors::MotorMap>> motorConfig) {
         try {
-            //create all motors
+            // Create all motors
             for (auto it = motorConfig->begin(); it != motorConfig->end(); it++) {
                 it->topicName = "can_hw_interface/" + it->topicName;
 
@@ -58,7 +67,7 @@ public:
                 RCLCPP_INFO(this->get_logger(), "creating device on topic %s with ID %d", it->topicName.c_str(), it->canID);
                 topics.push_back(it->topicName);
 
-                //create callback
+                // Create callback
                 std::shared_ptr<robotmotors::GenericMotor> motor;
                 switch (it->motorType) {
                     case robotmotors::VICTORSPX:
@@ -74,9 +83,21 @@ public:
                         throw std::runtime_error("No valid motor type defined. Got: " + it->motorType);
                 }
 
-                //configuration phase
+                // Configuration phase
                 if (!motor->configure(*this, it->topicName, it->config)) {
                     throw std::runtime_error("Device returned non-ok error code after configuration");
+                }
+
+                // Make sure feedback rate is present
+                if(it->config->find("feedback_rate") != it->config->end()){
+                    // Add to high rate list
+                    if(it->config->at("feedback_rate") < 11.0) this->highRateMotors.push_back(motor);
+
+                    // Add to mid rate list
+                    else if(it->config->at("feedback_rate") < 21.0) this->midRateMotors.push_back(motor);
+                    
+                    // Add to low rate list
+                    else this->lowRateMotors.push_back(motor);
                 }
 
                 this->motors[it->canID] = motor;
@@ -102,6 +123,24 @@ public:
 
     bool hasInit(){
         return initComplete;
+    }
+
+    void lowRateCallback(){
+        for(auto &motor : lowRateMotors){
+            motor->publishNewSensorData();
+        }
+    }
+
+    void midRateCallback(){
+        for(auto &motor : midRateMotors){
+            motor->publishNewSensorData();
+        }
+    }
+
+    void highRateCallback(){
+        for(auto &motor : highRateMotors){
+            motor->publishNewSensorData();
+        }
     }
 
     //TODO fix error here

@@ -50,7 +50,7 @@ namespace robotmotors {
         /*
          *
          */
-        void publishNewSensorData();
+        void publishNewSensorData() override;
 
         /*
          * sets this using the data from the msg file
