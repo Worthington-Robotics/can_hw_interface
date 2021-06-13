@@ -51,7 +51,7 @@ public:
         // Create publish timers at different rates
         lowRate = create_wall_timer(100ms, std::bind(&HardwareController::lowRateCallback, this));
         midRate = create_wall_timer(20ms, std::bind(&HardwareController::midRateCallback, this));
-        highRate = create_wall_timer(5ms, std::bind(&HardwareController::highRateCallback, this));
+        highRate = create_wall_timer(10ms, std::bind(&HardwareController::highRateCallback, this));
     }
 
     void setMotors(std::shared_ptr<std::vector<robotmotors::MotorMap>> motorConfig) {
