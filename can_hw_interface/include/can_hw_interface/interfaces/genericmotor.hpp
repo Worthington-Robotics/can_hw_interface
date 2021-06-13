@@ -96,6 +96,11 @@ namespace robotmotors {
          **/
         virtual void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) = 0;
 
+        /*
+         * function call to allow this motor to publish all related sensor data to a ros topic
+         */
+        virtual void publishNewSensorData() = 0;
+
 
         virtual ~GenericMotor() = default;
     };
