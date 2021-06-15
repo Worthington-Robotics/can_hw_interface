@@ -101,15 +101,20 @@ public:
                 // Make sure feedback rate is present
                 if (it->config->find("feedback_rate") != it->config->end()) {
                     // Add to high rate list
-                    if (it->config->at("feedback_rate") < 11.0) this->highRateMotors.push_back(motor);
-
+                    if (it->config->at("feedback_rate") < 11.0){
+                        RCLCPP_INFO(this->get_logger(), "Registering device for high rate feedback");
+                        this->highRateMotors.push_back(motor);
+                    }
                     // Add to mid rate list
-                    else if (it->config->at("feedback_rate") < 21.0)
+                    else if (it->config->at("feedback_rate") < 21.0){
+                        RCLCPP_INFO(this->get_logger(), "Registering device for mid rate feedback");
                         this->midRateMotors.push_back(motor);
-
+                    }
                     // Add to low rate list
-                    else
+                    else{
+                        RCLCPP_INFO(this->get_logger(), "Registering device for low rate feedback");
                         this->lowRateMotors.push_back(motor);
+                    } 
                 }
 
                 this->motors[it->canID] = motor;
