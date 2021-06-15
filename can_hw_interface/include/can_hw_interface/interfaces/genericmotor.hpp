@@ -70,6 +70,10 @@ namespace robotmotors {
          **/
         virtual void getType(std::string& type) = 0;
 
+        std::shared_ptr<std::string> getMainTopic(){
+            return topic;
+        }
+
         /**
          * configures the motor based on the presence of data in a map
          * the device is expected to be defaulted, then configured as expected

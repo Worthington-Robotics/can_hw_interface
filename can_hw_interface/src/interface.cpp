@@ -160,7 +160,7 @@ public:
         RCLCPP_INFO(this->get_logger(), "updating %d high rate devices", highRateMotors.size());
         for (auto& motor : highRateMotors) {
             motor->publishNewSensorData();
-            RCLCPP_INFO(this->get_logger(), "updating sensors");
+            RCLCPP_INFO(this->get_logger(), "updating sensors for %s", motor->getMainTopic());
         }
     }
 
