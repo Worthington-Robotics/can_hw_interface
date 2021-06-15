@@ -143,20 +143,24 @@ public:
     }
 
     void lowRateCallback() {
+        RCLCPP_INFO(this->get_logger(), "updating %d low rate devices", lowRateMotors.size());
         for (auto& motor : lowRateMotors) {
             motor->publishNewSensorData();
         }
     }
 
     void midRateCallback() {
+        RCLCPP_INFO(this->get_logger(), "updating %d mid rate devices", midRateMotors.size());
         for (auto& motor : midRateMotors) {
             motor->publishNewSensorData();
         }
     }
 
     void highRateCallback() {
+        RCLCPP_INFO(this->get_logger(), "updating %d high rate devices", highRateMotors.size());
         for (auto& motor : highRateMotors) {
             motor->publishNewSensorData();
+            RCLCPP_INFO(this->get_logger(), "updating sensors");
         }
     }
 
