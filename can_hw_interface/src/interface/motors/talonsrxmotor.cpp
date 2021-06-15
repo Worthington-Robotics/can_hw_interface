@@ -125,6 +125,8 @@ namespace robotmotors {
     }
 
     void TalonSrxMotor::publishNewSensorData(){
+        std::cout << "invoked publish on sensor data topic " << *topic << std::endl;
+
         auto msg = can_msgs::msg::MotorStatusMsg();
         if(feedbackEn.at(0)) msg.position = motor->GetSelectedSensorPosition();
         if(feedbackEn.at(1)) msg.velocity = motor->GetSelectedSensorVelocity();
