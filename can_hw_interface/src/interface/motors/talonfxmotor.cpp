@@ -45,7 +45,6 @@ namespace robotmotors {
             //feedback settings
             else if (it->first == "feedback_rate"){
                 motor->SetStatusFramePeriod(Status_2_Feedback0, (int)it->second, 0);
-                updateTimer = node.create_wall_timer(std::chrono::milliseconds((int)it->second), std::bind(&TalonFxMotor::publishNewSensorData, this));
             }
             else if (it->first == "feedback_position")
                 feedbackEn.at(0) = it->second != 0;

@@ -32,9 +32,6 @@ namespace robotmotors {
         // ros2 subscription pointer for listening on output demand topic
         rclcpp::Subscription<can_msgs::msg::MotorMsg>::SharedPtr demands;
 
-        //ros2 timer to handle publishing data from sensors
-        rclcpp::TimerBase::SharedPtr updateTimer;
-
         // ros2 publisher for publishing data from sensor inputs
         rclcpp::Publisher<can_msgs::msg::MotorStatusMsg>::SharedPtr publisher;
 

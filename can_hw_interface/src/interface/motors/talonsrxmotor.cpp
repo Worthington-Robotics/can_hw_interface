@@ -44,7 +44,6 @@ namespace robotmotors {
             //feedback settings
             else if (it->first == "feedback_rate"){
                 motor->SetStatusFramePeriod(Status_2_Feedback0, (int)it->second, 0);
-                updateTimer = node.create_wall_timer(std::chrono::milliseconds((int)it->second), std::bind(&TalonSrxMotor::publishNewSensorData, this));
             }
             else if (it->first == "feedback_position")
                 feedbackEn.at(0) = it->second != 0;
@@ -125,7 +124,7 @@ namespace robotmotors {
     }
 
     void TalonSrxMotor::publishNewSensorData(){
-        std::cout << "invoked publish on sensor data topic " << *topic << std::endl;
+        //std::cout << "invoked publish on sensor data topic " << *topic << std::endl;
 
         auto msg = can_msgs::msg::MotorStatusMsg();
         if(feedbackEn.at(0)) msg.position = motor->GetSelectedSensorPosition();
