@@ -56,7 +56,7 @@ public:
         subsOpt = rclcpp::SubscriptionOptions();
         subsOpt.callback_group = subs;
 
-        safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", 10, std::bind(&HardwareController::feedSafety, this, _1), subsOpt);
+        safetySubscrip = create_subscription<std_msgs::msg::Bool>("safety_enable", rclcpp::SensorDataQoS(), std::bind(&HardwareController::feedSafety, this, _1), subsOpt);
 
         // Create publish timers at different rates
         lowRate = create_wall_timer(100ms, std::bind(&HardwareController::lowRateCallback, this), pubs);

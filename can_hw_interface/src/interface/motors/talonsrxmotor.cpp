@@ -16,10 +16,10 @@ namespace robotmotors {
     bool TalonSrxMotor::configure(rclcpp::Node & node, rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> opts, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config){
         topic = std::make_shared<std::string>(topicStr);
 
-        demands = node.create_subscription<can_msgs::msg::MotorMsg>(topic->c_str(), 10, std::bind(&TalonSrxMotor::setCallback, this, _1), opts);
+        demands = node.create_subscription<can_msgs::msg::MotorMsg>(topic->c_str(), rclcpp::SystemDefaultsQoS(), std::bind(&TalonSrxMotor::setCallback, this, _1), opts);
         
         std::string pubTopic = (*topic) + "/sensor_data";
-        publisher = node.create_publisher<can_msgs::msg::MotorStatusMsg>(pubTopic , 10);
+        publisher = node.create_publisher<can_msgs::msg::MotorStatusMsg>(pubTopic, rclcpp::SensorDataQoS());
 
         motor->ConfigFactoryDefault();
         motor->ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0);
