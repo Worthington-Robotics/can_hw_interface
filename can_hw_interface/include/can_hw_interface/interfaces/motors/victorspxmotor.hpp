@@ -26,15 +26,35 @@ namespace robotmotors {
         //5 -- upper limit
         std::vector<bool> feedbackEn;
 
+        // ros2 subscription pointer for listening on output demand topic
+        rclcpp::Subscription<can_msgs::msg::MotorMsg>::SharedPtr demands;
+
+        //ros2 timer to handle publishing data from sensors
+        rclcpp::TimerBase::SharedPtr updateTimer;
+
+        // ros2 publisher for publishing data from sensor inputs
+        rclcpp::Publisher<can_msgs::msg::MotorStatusMsg>::SharedPtr publisher;
+
     public:
         VictorSpxMotor(int id);
 
         void getType(std::string& type) override;
-        bool configure(std::shared_ptr<std::map<std::string, double>> config) override;
+
+        bool configure(rclcpp::Node & node, rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> opts, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) override;
+
         void configPIDF(const std::shared_ptr<can_msgs::srv::SetPIDFGains::Request> req,
                         std::shared_ptr<can_msgs::srv::SetPIDFGains::Response> resp) override;
+
         void set(ControlMode mode, double output, double arbOutput) override;
-        bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) override;
+
+        /*
+         *
+         */
+        void publishNewSensorData() override;
+
+        /*
+         * sets this using the data from the msg file
+         */
         void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) override;
 
         ~VictorSpxMotor();

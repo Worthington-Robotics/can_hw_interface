@@ -7,6 +7,7 @@
 #include "can_msgs/msg/motor_status_msg.hpp"
 #include "can_msgs/srv/set_pidf_gains.hpp"
 #include "genericsensor.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 namespace robotmotors {
 
@@ -58,18 +59,27 @@ namespace robotmotors {
     };
 
     class GenericMotor {
+
+    protected:
+        //string topic for the motor to use as a base
+        std::shared_ptr<std::string> topic;
+
     public:
         /**
          * gets a string alias for the motor controller type used internally 
          **/
         virtual void getType(std::string& type) = 0;
 
+        std::shared_ptr<std::string> getMainTopic(){
+            return topic;
+        }
+
         /**
          * configures the motor based on the presence of data in a map
          * the device is expected to be defaulted, then configured as expected
          * returns true if the device was configured without errors
          **/
-        virtual bool configure(std::shared_ptr<std::map<std::string, double>> config) = 0;
+        virtual bool configure(rclcpp::Node & node, rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>> opts, std::string & topicStr, std::shared_ptr<std::map<std::string, double>> config) = 0;
 
         /**
          * ROS service for configuring PIDF values dynamically while the controller is operating
@@ -85,16 +95,16 @@ namespace robotmotors {
         virtual void set(ControlMode mode, double output, double arbInput) = 0;
 
         /**
-         * gets the status reporting message to be published containing feedback data
-         * returns true if the device gave all values ok
-         **/
-        virtual bool getSensorMsg(const can_msgs::msg::MotorStatusMsg::SharedPtr msg) = 0;
-
-        /**
          * callback for ROS messages to set the state of the motor
          * probably should call the generic form of the set function with the ROS message values
          **/
         virtual void setCallback(const can_msgs::msg::MotorMsg::SharedPtr msg) = 0;
+
+        /*
+         * function call to allow this motor to publish all related sensor data to a ros topic
+         */
+        virtual void publishNewSensorData() = 0;
+
 
         virtual ~GenericMotor() = default;
     };
