@@ -1,4 +1,4 @@
-# pi_hw_interface
+# can_hw_interface
 
 # Setup
 This package comes with a systemd service which allows for the automatic configuration of the canbus after the network initalization step is complete. This file will bring the can bus into a ready state.
